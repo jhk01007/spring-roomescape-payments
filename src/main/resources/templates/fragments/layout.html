@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(pageTitle)">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title th:text="${pageTitle}">방탈출 예약</title>
+  <link rel="stylesheet" th:href="@{/css/roomescape.css(v=${assetVersion})}" href="/css/roomescape.css?v=popup-errors-2" />
+</head>
+<body>
+  <header class="topbar" th:fragment="topbar(activePage, brandSubtitle)">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">R</div>
+        <div class="brand-text">
+          <div class="brand-title">방탈출 예약</div>
+          <div class="brand-subtitle" th:text="${brandSubtitle}">날짜와 테마를 고르고 가능한 시간만 예약</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <nav class="view-toggle" aria-label="화면 전환">
+          <a id="userTab" class="view-button" th:classappend="${activePage == 'user'} ? 'active' : ''" th:href="@{/}" href="/">사용자</a>
+          <a id="adminTab" class="view-button" th:classappend="${activePage == 'admin'} ? 'active' : ''" th:href="@{/admin}" href="/admin">관리자</a>
+        </nav>
+        <div id="sourceStatus" class="status-pill">
+          <span class="status-dot"></span>
+          <span>데이터 불러오는 중</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" th:fragment="toast"></div>
+
+  <div id="errorPopup" class="message-popup" role="alertdialog" aria-modal="true" aria-labelledby="errorPopupTitle" aria-describedby="errorPopupMessage" hidden th:fragment="error-popup">
+    <div class="message-popup-panel">
+      <div class="message-popup-icon" aria-hidden="true">!</div>
+      <div class="message-popup-content">
+        <h2 id="errorPopupTitle" class="message-popup-title">확인해주세요</h2>
+        <p id="errorPopupMessage" class="message-popup-message"></p>
+      </div>
+      <button id="errorPopupClose" class="message-popup-button" type="button">확인</button>
+    </div>
+  </div>
+
+  <script th:fragment="roomescape-script" th:src="@{/js/roomescape.js(v=${assetVersion})}" src="/js/roomescape.js?v=popup-errors-2" defer></script>
+</body>
+</html>

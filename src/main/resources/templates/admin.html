@@ -1,35 +1,11 @@
 <!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="data:," />
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}">
   <title>방탈출 예약 관리자</title>
-  <link rel="stylesheet" href="/css/roomescape.css?v=popup-errors-2" />
 </head>
-<body data-page="admin">
+<body data-page="admin" th:attr="data-page=${activePage}">
   <div class="app-shell">
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="brand">
-          <div class="brand-mark">R</div>
-          <div class="brand-text">
-            <div class="brand-title">방탈출 예약</div>
-            <div class="brand-subtitle">테마, 시간, 예약을 운영 관리</div>
-          </div>
-        </div>
-        <div class="topbar-actions">
-          <nav class="view-toggle" aria-label="화면 전환">
-            <a id="userTab" class="view-button" href="/">사용자</a>
-            <a id="adminTab" class="view-button active" href="/admin">관리자</a>
-          </nav>
-          <div id="sourceStatus" class="status-pill">
-            <span class="status-dot"></span>
-            <span>데이터 불러오는 중</span>
-          </div>
-        </div>
-      </div>
-    </header>
+    <header th:replace="~{fragments/layout :: topbar(${activePage}, ${brandSubtitle})}"></header>
 
     <main>
       <section class="view-section" aria-label="관리자 화면">
@@ -156,17 +132,8 @@
     </main>
   </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <div id="errorPopup" class="message-popup" role="alertdialog" aria-modal="true" aria-labelledby="errorPopupTitle" aria-describedby="errorPopupMessage" hidden>
-    <div class="message-popup-panel">
-      <div class="message-popup-icon" aria-hidden="true">!</div>
-      <div class="message-popup-content">
-        <h2 id="errorPopupTitle" class="message-popup-title">확인해주세요</h2>
-        <p id="errorPopupMessage" class="message-popup-message"></p>
-      </div>
-      <button id="errorPopupClose" class="message-popup-button" type="button">확인</button>
-    </div>
-  </div>
-  <script src="/js/roomescape.js?v=popup-errors-2" defer></script>
+  <div th:replace="~{fragments/layout :: toast}"></div>
+  <div th:replace="~{fragments/layout :: error-popup}"></div>
+  <script th:replace="~{fragments/layout :: roomescape-script}"></script>
 </body>
 </html>
