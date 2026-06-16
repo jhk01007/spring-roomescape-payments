@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.common.exception.DomainException;
-import roomescape.reservation.repository.ReservationRepository;
-import roomescape.reservationtime.repository.ReservationTimeRepository;
+import roomescape.reservation.domain.ReservationRepository;
+import roomescape.reservationtime.domain.ReservationTimeRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -48,8 +48,8 @@ public class ReservationTimeService {
             throw new DomainException(RESERVATION_TIME_HAS_RESERVATION);
         }
 
-        if (!reservationTimeRepository.cancelById(id, LocalDateTime.now(clock))) {
-            throw new DomainException(RESERVATION_TIME_NOT_FOUND);
-        }
+        ReservationTime reservationTime = reservationTimeRepository.findById(id)
+                .orElseThrow(() -> new DomainException(RESERVATION_TIME_NOT_FOUND));
+        reservationTime.cancel(LocalDateTime.now(clock));
     }
 }

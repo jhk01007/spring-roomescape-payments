@@ -1,5 +1,15 @@
 package roomescape.reservation.domain;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import roomescape.common.exception.DomainException;
 import roomescape.reservationtime.domain.ReservationTime;
@@ -19,14 +29,39 @@ import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.*;
 import static roomescape.theme.exception.ThemeErrorCode.*;
 
 @Getter
+@Entity
+@Table(name = "reservation")
 public class Reservation {
-    private final Long id;
-    private final String guestName;
-    private final LocalDate date;
-    private final ReservationTime time;
-    private final Theme theme;
-    private final Status status;
-    private final LocalDateTime lastModifiedAt;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "guest_name", nullable = false)
+    private String guestName;
+
+    @Column(nullable = false)
+    private LocalDate date;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "time_id", nullable = false)
+    private ReservationTime time;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "theme_id", nullable = false)
+    private Theme theme;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
+
+    @Column(name = "cancel_token", nullable = false)
+    private Long cancelToken;
+
+    @Column(name = "last_modified_at", nullable = false)
+    private LocalDateTime lastModifiedAt;
+
+    protected Reservation() {
+    }
 
     private Reservation(
             Long id, String guestName, LocalDate date, ReservationTime time, Theme theme, Status status, LocalDateTime lastModifiedAt) {
@@ -37,6 +72,7 @@ public class Reservation {
         this.time = time;
         this.theme = theme;
         this.status = status;
+        this.cancelToken = 0L;
         this.lastModifiedAt = lastModifiedAt;
     }
 
@@ -117,6 +153,24 @@ public class Reservation {
 
     public Reservation changeStatus(Status status) {
         return new Reservation(id, guestName, date, time, theme, status, lastModifiedAt);
+    }
+
+    public void updateDateTimeAndStatus(
+            LocalDate changedDate, ReservationTime changedTime, Status status, LocalDateTime lastModifiedAt) {
+        validateReservation(guestName, changedDate, changedTime, theme, lastModifiedAt);
+        this.date = changedDate;
+        this.time = changedTime;
+        this.status = status;
+        this.lastModifiedAt = lastModifiedAt;
+    }
+
+    public void updateStatus(Status status) {
+        this.status = status;
+    }
+
+    public void cancel() {
+        this.status = CANCELED;
+        this.cancelToken = id;
     }
 
     public boolean isConfirmed() {

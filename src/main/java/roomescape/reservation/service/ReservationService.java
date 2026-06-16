@@ -9,11 +9,11 @@ import roomescape.reservation.domain.Status;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservation.service.validator.ReservationValidator;
 import roomescape.reservationtime.domain.ReservationTime;
+import roomescape.reservationtime.domain.ReservationTimeRepository;
 import roomescape.theme.domain.Theme;
 import roomescape.common.exception.DomainException;
-import roomescape.reservation.repository.ReservationRepository;
-import roomescape.reservationtime.repository.ReservationTimeRepository;
-import roomescape.theme.repository.ThemeRepository;
+import roomescape.reservation.domain.ReservationRepository;
+import roomescape.theme.domain.ThemeRepository;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -72,13 +72,14 @@ public class ReservationService {
         ReservationTime changedTime = getReservationTime(changedTimeId);
 
         Status afterStatus = determineState(changedDate, changedTimeId, beforeReservation.getTheme().getId());
+        LocalDateTime now = LocalDateTime.now(clock);
         Reservation changedReservation = beforeReservation.changeDateTimeAndStatus(
-                changedDate, changedTime, afterStatus, LocalDateTime.now(clock));
+                changedDate, changedTime, afterStatus, now);
 
         reservationValidator.validateEdit(changedReservation);
 
-        updateDateAndTimeAndStatus(changedReservation);
         updateTopWaitingConfirmed(beforeReservation);
+        beforeReservation.updateDateTimeAndStatus(changedDate, changedTime, afterStatus, now);
     }
 
     private void updateTopWaitingConfirmed(Reservation reservation) {
@@ -90,7 +91,7 @@ public class ReservationService {
 
             if (topWaiting.isPresent()) {
                 Reservation top = topWaiting.get();
-                updateStatus(top.changeStatus(CONFIRMED));
+                top.updateStatus(CONFIRMED);
             }
         }
     }
@@ -99,22 +100,16 @@ public class ReservationService {
     public void cancel(Long id) {
         Reservation reservation = getReservation(id);
         reservationValidator.validateCancel(reservation);
-        cancelReservation(id);
         updateTopWaitingConfirmed(reservation);
+        reservation.cancel();
     }
 
     @Transactional
     public void cancelMine(Long id, String guestName) {
         Reservation reservation = getReservation(id);
         reservationValidator.validateCancelMine(reservation, guestName);
-        cancelReservation(id);
         updateTopWaitingConfirmed(reservation);
-    }
-
-    private void cancelReservation(Long id) {
-        if (!reservationRepository.cancelById(id)) {
-            throw new DomainException(RESERVATION_NOT_FOUND);
-        }
+        reservation.cancel();
     }
 
     private Theme getTheme(Long themeId) {
@@ -130,24 +125,6 @@ public class ReservationService {
     private ReservationTime getReservationTime(Long timeId) {
         return reservationTimeRepository.findById(timeId)
                 .orElseThrow(() -> new DomainException(RESERVATION_TIME_NOT_FOUND));
-    }
-
-    private void updateDateAndTimeAndStatus(Reservation reservation) {
-        if (!reservationRepository.updateDateAndTimeAndStatus(
-                reservation.getId(),
-                reservation.getDate(),
-                reservation.getTime().getId(),
-                reservation.getStatus(),
-                reservation.getLastModifiedAt()
-        )) {
-            throw new DomainException(RESERVATION_NOT_FOUND);
-        }
-    }
-
-    private void updateStatus(Reservation reservation) {
-        if (!reservationRepository.updateStatus(reservation.getId(), reservation.getStatus())) {
-            throw new DomainException(RESERVATION_NOT_FOUND);
-        }
     }
 
     private Status determineState(LocalDate date, Long timeId, Long themeId) {

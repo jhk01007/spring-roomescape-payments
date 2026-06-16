@@ -1,6 +1,6 @@
 package roomescape.test_config.integration.db.service;
 
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import roomescape.test_config.clock.TestClockConfig;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@JdbcTest
+@DataJpaTest
 @Import({
         AutoServiceTestBeanConfig.class,
         TestClockConfig.class,

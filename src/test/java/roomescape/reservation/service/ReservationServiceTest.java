@@ -10,15 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.Status;
-import roomescape.reservation.repository.ReservationRepository;
+import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservationtime.domain.ReservationTime;
-import roomescape.reservationtime.repository.ReservationTimeRepository;
+import roomescape.reservationtime.domain.ReservationTimeRepository;
 import roomescape.test_config.clock.MutableClock;
 import roomescape.test_config.integration.db.service.ServiceTest;
 import roomescape.theme.domain.Theme;
-import roomescape.theme.repository.ThemeRepository;
+import roomescape.theme.domain.ThemeRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -3,34 +3,27 @@ package roomescape.theme.repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import roomescape.reservation.domain.Status;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.integration.db.repository.RepositoryTest;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
 import roomescape.theme.domain.Theme;
+import roomescape.theme.domain.ThemeRepository;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 @RepositoryTest
-class JdbcThemeRepositoryTest {
+class ThemeRepositoryTest {
 
     @Autowired
-    private JdbcThemeRepository jdbcThemeRepository;
-
-    @Autowired
-    private NamedParameterJdbcTemplate jdbcTemplate;
+    private ThemeRepository themeRepository;
 
     @Autowired
     private SQLFixtureGenerator sqlFixtureGenerator;
@@ -38,9 +31,9 @@ class JdbcThemeRepositoryTest {
     @Test
     @DisplayName("Theme를 저장하고 조회한다.")
     public void saveAndFindById() {
-        Theme theme = jdbcThemeRepository.save(Theme.create("kim", "desc1", "thumb1"));
+        Theme theme = themeRepository.save(Theme.create("kim", "desc1", "thumb1"));
 
-        Optional<Theme> found = jdbcThemeRepository.findById(theme.getId());
+        Optional<Theme> found = themeRepository.findById(theme.getId());
 
         assertThat(found).isPresent();
         Theme savedTheme = found.get();
@@ -57,7 +50,7 @@ class JdbcThemeRepositoryTest {
         Theme theme = sqlFixtureGenerator.insertDeletedTheme("kim", "desc1", "thumb1");
 
         // when
-        Optional<Theme> found = jdbcThemeRepository.findById(theme.getId());
+        Optional<Theme> found = themeRepository.findById(theme.getId());
 
         // then
         assertThat(found).isEmpty();
@@ -70,7 +63,7 @@ class JdbcThemeRepositoryTest {
         sqlFixtureGenerator.insertTheme("lee", "desc2", "thumb2");
         sqlFixtureGenerator.insertTheme("park", "desc3", "thumb3");
 
-        List<Theme> themes = jdbcThemeRepository.findAll();
+        List<Theme> themes = themeRepository.findAll();
 
         assertThat(themes).hasSize(3)
                 .extracting(
@@ -92,7 +85,7 @@ class JdbcThemeRepositoryTest {
         Theme activeTheme = sqlFixtureGenerator.insertTheme("lee", "desc2", "thumb2");
 
         // when
-        List<Theme> themes = jdbcThemeRepository.findAll();
+        List<Theme> themes = themeRepository.findAll();
 
         // then
         assertThat(themes)
@@ -105,8 +98,8 @@ class JdbcThemeRepositoryTest {
     public void existsById() {
         Theme theme = sqlFixtureGenerator.insertTheme("kim", "desc1", "thumb1");
 
-        boolean exists = jdbcThemeRepository.existsById(theme.getId());
-        boolean notExists = jdbcThemeRepository.existsById(theme.getId() + 1);
+        boolean exists = themeRepository.existsById(theme.getId());
+        boolean notExists = themeRepository.existsById(theme.getId() + 1);
 
         assertThat(exists).isTrue();
         assertThat(notExists).isFalse();
@@ -119,7 +112,7 @@ class JdbcThemeRepositoryTest {
         Theme theme = sqlFixtureGenerator.insertDeletedTheme("kim", "desc1", "thumb1");
 
         // when
-        boolean exists = jdbcThemeRepository.existsById(theme.getId());
+        boolean exists = themeRepository.existsById(theme.getId());
 
         // then
         assertThat(exists).isFalse();
@@ -132,7 +125,7 @@ class JdbcThemeRepositoryTest {
         // given - @/popular-theme-data.sql
 
         // when
-        List<Theme> topThemes = jdbcThemeRepository.findTopThemesByReservationCount(
+        List<Theme> topThemes = themeRepository.findTopThemesByReservationCount(
                 LocalDate.of(2026, 4, 29),
                 LocalDate.of(2026, 5, 5),
                 10
@@ -166,7 +159,7 @@ class JdbcThemeRepositoryTest {
         sqlFixtureGenerator.insertDeletedReservation("포비", targetDate, otherTime, deletedTheme);
 
         // when
-        List<Theme> topThemes = jdbcThemeRepository.findTopThemesByReservationCount(
+        List<Theme> topThemes = themeRepository.findTopThemesByReservationCount(
                 LocalDate.of(2026, 4, 29),
                 LocalDate.of(2026, 5, 5),
                 10
@@ -197,7 +190,7 @@ class JdbcThemeRepositoryTest {
         sqlFixtureGenerator.insertReservation("포비", targetDate, otherTime, deletedTheme, Status.WAITING);
 
         // when
-        List<Theme> topThemes = jdbcThemeRepository.findTopThemesByReservationCount(
+        List<Theme> topThemes = themeRepository.findTopThemesByReservationCount(
                 LocalDate.of(2026, 4, 29),
                 LocalDate.of(2026, 5, 5),
                 10
@@ -210,39 +203,4 @@ class JdbcThemeRepositoryTest {
                 .doesNotContain(deletedTheme.getId());
     }
 
-    @Test
-    @DisplayName("Theme를 삭제한다.")
-    public void cancelById_success_softDelete() {
-        Theme theme = sqlFixtureGenerator.insertTheme("kim", "desc1", "thumb1");
-        LocalDateTime now = LocalDateTime.of(2026, 5, 15, 10, 0);
-
-        boolean deleted = jdbcThemeRepository.cancelById(theme.getId(), now);
-
-        assertThat(deleted).isTrue();
-        assertThat(jdbcThemeRepository.findAll()).isEmpty();
-
-        Map<String, Object> deleteInfo = findDeleteInfoById(theme.getId());
-        assertThat(((Timestamp) deleteInfo.get("deleted_at")).toLocalDateTime()).isEqualTo(now);
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 Theme는 삭제되지 않는다.")
-    public void cancelById_fail_notFound() {
-        // given
-        Long id = 1L;
-
-        // when
-        boolean deleted = jdbcThemeRepository.cancelById(id, LocalDateTime.now());
-
-        // then
-        assertThat(deleted).isFalse();
-    }
-
-    private Map<String, Object> findDeleteInfoById(Long id) {
-        return jdbcTemplate.queryForMap("""
-                SELECT deleted_at
-                FROM theme
-                WHERE id = :id
-                """, new MapSqlParameterSource("id", id));
-    }
 }

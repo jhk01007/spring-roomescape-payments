@@ -6,17 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.Status;
-import roomescape.reservation.repository.ReservationRepository;
+import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservationtime.domain.ReservationTime;
-import roomescape.reservationtime.repository.ReservationTimeRepository;
+import roomescape.reservationtime.domain.ReservationTimeRepository;
 import roomescape.test_config.integration.db.service.ServiceTest;
 import roomescape.theme.domain.Theme;
-import roomescape.theme.repository.ThemeRepository;
+import roomescape.theme.domain.ThemeRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.*;
 
@@ -46,6 +47,19 @@ class ReservationTimeServiceTest {
         assertThatThrownBy(() -> reservationTimeService.create(startAt))
                 .isInstanceOf(DomainException.class)
                 .hasMessage(RESERVATION_TIME_ALREADY_EXISTS.message());
+    }
+
+    @Test
+    @DisplayName("예약 시간을 삭제한다.")
+    public void delete_success() {
+        // given
+        ReservationTime reservationTime = insertReservationTime(LocalTime.of(10, 0));
+
+        // when
+        reservationTimeService.delete(reservationTime.getId());
+
+        // then
+        assertThat(reservationTimeRepository.findById(reservationTime.getId())).isEmpty();
     }
 
     @Test

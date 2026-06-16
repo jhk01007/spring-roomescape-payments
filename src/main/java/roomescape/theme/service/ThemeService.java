@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.DomainException;
 import roomescape.theme.domain.Theme;
-import roomescape.reservation.repository.ReservationRepository;
-import roomescape.theme.repository.ThemeRepository;
+import roomescape.reservation.domain.ReservationRepository;
+import roomescape.theme.domain.ThemeRepository;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -49,8 +49,8 @@ public class ThemeService {
             throw new DomainException(THEME_HAS_RESERVATION);
         }
 
-        if (!themeRepository.cancelById(id, LocalDateTime.now(clock))) {
-            throw new DomainException(THEME_NOT_FOUND);
-        }
+        Theme theme = themeRepository.findById(id)
+                .orElseThrow(() -> new DomainException(THEME_NOT_FOUND));
+        theme.cancel(LocalDateTime.now(clock));
     }
 }

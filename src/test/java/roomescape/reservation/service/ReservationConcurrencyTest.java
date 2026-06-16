@@ -14,9 +14,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
-import roomescape.reservation.repository.JdbcReservationRepository;
-import roomescape.reservation.repository.ReservationRepository;
+import roomescape.reservation.repository.ReservationRepositoryImpl;
+import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.clock.MutableClock;
@@ -26,7 +25,6 @@ import roomescape.theme.domain.Theme;
 
 import java.sql.Date;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -134,7 +132,7 @@ class ReservationConcurrencyTest {
 
         @Bean
         @Primary
-        ReservationRepository synchronizedReservationRepository(JdbcReservationRepository delegate) {
+        ReservationRepository synchronizedReservationRepository(ReservationRepositoryImpl delegate) {
             return new SynchronizedReservationRepository(delegate);
         }
     }
@@ -177,22 +175,6 @@ class ReservationConcurrencyTest {
         @Override
         public Reservation save(Reservation reservation) {
             return delegate.save(reservation);
-        }
-
-        @Override
-        public boolean updateDateAndTimeAndStatus(
-                Long id, LocalDate date, Long timeId, Status status, LocalDateTime lastModifiedAt) {
-            return delegate.updateDateAndTimeAndStatus(id, date, timeId, status, lastModifiedAt);
-        }
-
-        @Override
-        public boolean updateStatus(Long id, Status status) {
-            return delegate.updateStatus(id, status);
-        }
-
-        @Override
-        public boolean cancelById(Long id) {
-            return delegate.cancelById(id);
         }
 
         @Override

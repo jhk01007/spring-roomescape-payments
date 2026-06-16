@@ -1,5 +1,11 @@
 package roomescape.theme.domain;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import roomescape.common.exception.DomainException;
 
@@ -11,12 +17,27 @@ import static roomescape.common.domain.DomainPreconditions.requireNonBlank;
 import static roomescape.theme.exception.ThemeErrorCode.*;
 
 @Getter
+@Entity
+@Table(name = "theme")
 public class Theme {
-    private final Long id;
-    private final String name;
-    private final String description;
-    private final String thumbnail;
-    private final LocalDateTime deletedAt;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String description;
+
+    @Column(nullable = false)
+    private String thumbnail;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    protected Theme() {
+    }
 
     private Theme(
             Long id,
@@ -54,6 +75,10 @@ public class Theme {
     public Theme withId(long id) {
         require(this.id == null, new DomainException(THEME_ALREADY_HAS_ID));
         return of(id, name, description, thumbnail, deletedAt);
+    }
+
+    public void cancel(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
     private void validateTheme(String name, String description, String thumbnail) {

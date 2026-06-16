@@ -7,16 +7,17 @@ import roomescape.common.exception.DomainException;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.Status;
 import roomescape.reservationtime.domain.ReservationTime;
-import roomescape.reservation.repository.ReservationRepository;
-import roomescape.reservationtime.repository.ReservationTimeRepository;
+import roomescape.reservation.domain.ReservationRepository;
+import roomescape.reservationtime.domain.ReservationTimeRepository;
 import roomescape.test_config.integration.db.service.ServiceTest;
 import roomescape.theme.domain.Theme;
-import roomescape.theme.repository.ThemeRepository;
+import roomescape.theme.domain.ThemeRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static roomescape.theme.exception.ThemeErrorCode.*;
 
@@ -34,6 +35,19 @@ class ThemeServiceTest {
 
     @Autowired
     ThemeRepository themeRepository;
+
+    @Test
+    @DisplayName("테마를 삭제한다.")
+    public void delete_success() {
+        // given
+        Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
+
+        // when
+        themeService.delete(theme.getId());
+
+        // then
+        assertThat(themeRepository.findById(theme.getId())).isEmpty();
+    }
 
     @Test
     @DisplayName("이미 예약 정보가 존재하는 테마는 삭제할 수 없다.")
