@@ -950,8 +950,8 @@ const API_BASE = "";
           orderId: prepared.orderId,
           orderName: prepared.orderName,
           customerName: draft.payload.guestName,
-          successUrl: window.location.origin + "/payments/success",
-          failUrl: window.location.origin + "/payments/fail"
+          successUrl: window.location.origin + "/?payment=success",
+          failUrl: window.location.origin + "/?payment=fail"
         });
       } catch (error) {
         if (error.code === "USER_CANCEL") {
@@ -1051,22 +1051,51 @@ const API_BASE = "";
       }, 3600);
     }
 
-    function showPaymentRedirectMessage() {
+    function cleanPaymentRedirectParams(params) {
+      ["payment", "paymentType", "paymentKey", "orderId", "amount", "code", "message"].forEach((key) => {
+        params.delete(key);
+      });
+
+      const query = params.toString();
+      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
+    }
+
+    async function handlePaymentRedirect() {
       if (!isUserPage() || !window.location.search) {
         return;
       }
 
       const params = new URLSearchParams(window.location.search);
-      if (params.get("payment") !== "success") {
+      const paymentStatus = params.get("payment");
+      if (paymentStatus === "fail") {
+        const message = params.get("message") || "결제가 완료되지 않았습니다.";
+        showErrorPopup(message, "결제에 실패했습니다");
+        cleanPaymentRedirectParams(params);
+        return;
+      }
+      if (paymentStatus !== "success") {
         return;
       }
 
-      showToast("예약이 완료되었습니다.", "결제가 승인되어 예약이 확정되었습니다.");
-      params.delete("payment");
+      const paymentKey = params.get("paymentKey");
+      const orderId = params.get("orderId");
+      const amount = Number(params.get("amount"));
+      if (!paymentKey || !orderId || !Number.isFinite(amount) || amount <= 0) {
+        showErrorPopup("결제 승인에 필요한 정보가 부족합니다.", "결제를 확인할 수 없습니다");
+        cleanPaymentRedirectParams(params);
+        return;
+      }
 
-      const query = params.toString();
-      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-      window.history.replaceState({}, document.title, nextUrl);
+      try {
+        await postJson("/payments/confirm", { paymentKey, orderId, amount });
+        showToast("예약이 완료되었습니다.", "결제가 승인되어 예약이 확정되었습니다.");
+        setFormMessage("예약이 완료되었습니다.", "ok");
+      } catch (error) {
+        showErrorPopup(endpointMessageOr(error, "결제 승인 처리에 실패했습니다."), "결제를 확인할 수 없습니다");
+      } finally {
+        cleanPaymentRedirectParams(params);
+      }
     }
 
     function getNextId(items) {
@@ -2066,4 +2095,4 @@ const API_BASE = "";
       });
     }
 
-    loadInitialData().then(showPaymentRedirectMessage);
+    loadInitialData().then(handlePaymentRedirect);

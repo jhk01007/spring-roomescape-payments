@@ -1,56 +1,57 @@
 package roomescape.payment.adapter.in.web;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import roomescape.common.exception.DomainException;
-import roomescape.payment.adapter.out.client.TossPaymentException;
+import org.springframework.web.bind.annotation.RestController;
+import roomescape.payment.adapter.in.web.dto.PaymentConfirmRequest;
+import roomescape.payment.adapter.in.web.dto.PaymentConfirmResponse;
+import roomescape.payment.adapter.in.web.dto.PaymentPrepareRequest;
+import roomescape.payment.adapter.in.web.dto.PaymentPrepareResponse;
+import roomescape.payment.adapter.in.web.dto.PaymentReservationRequest;
+import roomescape.payment.adapter.in.web.dto.PaymentReservationResponse;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
-import roomescape.payment.domain.exception.PaymentAmountMismatchException;
+import roomescape.payment.application.port.in.PaymentPrepareUseCase;
+import roomescape.payment.application.port.in.PaymentReservationUseCase;
+import roomescape.payment.domain.PaymentResult;
 
-@Controller
-@RequestMapping("/payments")
+import static org.springframework.http.HttpStatus.CREATED;
+
+@RestController
 @RequiredArgsConstructor
+@RequestMapping("/payments")
 public class PaymentController {
-
+    private final PaymentPrepareUseCase paymentPrepareUseCase;
+    private final PaymentReservationUseCase paymentReservationUseCase;
     private final PaymentConfirmUseCase paymentConfirmUseCase;
 
-    @GetMapping("/success")
-    public String success(
-            @RequestParam String paymentKey,
-            @RequestParam String orderId,
-            @RequestParam Long amount,
-            Model model
+    @PostMapping("/reservations")
+    public ResponseEntity<PaymentReservationResponse> createReservation(
+            @RequestBody @Valid PaymentReservationRequest request
     ) {
-        try {
-            paymentConfirmUseCase.confirm(paymentKey, orderId, amount);
-            return "redirect:/?payment=success";
-        } catch (PaymentAmountMismatchException e) {
-            return failView(model, "AMOUNT_MISMATCH", e.getMessage(), orderId);
-        } catch (TossPaymentException e) {
-            return failView(model, e.getCode(), e.getMessage(), orderId);
-        } catch (DomainException e) {
-            return failView(model, e.getErrorPolicy().code(), e.getMessage(), orderId);
-        }
+        return ResponseEntity.status(CREATED)
+                .body(PaymentReservationResponse.from(paymentReservationUseCase.create(request.toCommand())));
     }
 
-    @GetMapping("/fail")
-    public String fail(
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String message,
-            @RequestParam(required = false) String orderId,
-            Model model
+    @PostMapping("/prepare")
+    public ResponseEntity<PaymentPrepareResponse> prepare(
+            @RequestBody @Valid PaymentPrepareRequest request
     ) {
-        return failView(model, code, message, orderId);
+        return ResponseEntity.ok(PaymentPrepareResponse.from(paymentPrepareUseCase.prepare(request.toCommand())));
     }
 
-    private String failView(Model model, String code, String message, String orderId) {
-        model.addAttribute("code", code);
-        model.addAttribute("message", message);
-        model.addAttribute("orderId", orderId);
-        return "payments/fail";
+    @PostMapping("/confirm")
+    public ResponseEntity<PaymentConfirmResponse> confirm(
+            @RequestBody @Valid PaymentConfirmRequest request
+    ) {
+        PaymentResult paymentResult = paymentConfirmUseCase.confirm(
+                request.paymentKey(),
+                request.orderId(),
+                request.amount()
+        );
+        return ResponseEntity.ok(PaymentConfirmResponse.from(paymentResult));
     }
 }

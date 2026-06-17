@@ -56,16 +56,17 @@ public class TossPaymentGateway implements PaymentGateway {
                 tossPaymentResponse.orderId(),
                 PaymentStatus.from(tossPaymentResponse.status()),
                 tossPaymentResponse.totalAmount(),
-                toLocalDateTime(tossPaymentResponse.approvedAt()),
-                toLocalDateTime(tossPaymentResponse.requestedAt())
+                parseToLocalDateTime(tossPaymentResponse.approvedAt()),
+                parseToLocalDateTime(tossPaymentResponse.requestedAt())
         );
     }
 
-    private static LocalDateTime toLocalDateTime(OffsetDateTime dateTime) {
+    private static LocalDateTime parseToLocalDateTime(String dateTime) {
         if (dateTime == null) {
             return null;
         }
-        return dateTime.toLocalDateTime();
+        return OffsetDateTime.parse(dateTime)
+                .toLocalDateTime();
     }
 
 }

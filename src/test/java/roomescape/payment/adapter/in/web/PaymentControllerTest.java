@@ -1,9 +1,12 @@
 package roomescape.payment.adapter.in.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import roomescape.payment.adapter.in.web.dto.PaymentConfirmRequest;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
 import roomescape.payment.domain.PaymentResult;
 import roomescape.test_config.integration.controller.ControllerTest;
@@ -13,8 +16,8 @@ import java.time.LocalDateTime;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static roomescape.payment.domain.PaymentStatus.DONE;
 
@@ -24,13 +27,17 @@ class PaymentControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockedBean
     private PaymentConfirmUseCase paymentConfirmUseCase;
 
     @Test
-    @DisplayName("결제 성공 콜백을 처리하면 예약 화면으로 리다이렉트한다.")
-    void success_redirectToReservationPage() throws Exception {
+    @DisplayName("결제 승인 요청을 처리한다.")
+    void confirm_success() throws Exception {
         // given
+        PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key", "order-id", 40_000L);
         given(paymentConfirmUseCase.confirm("payment-key", "order-id", 40_000L))
                 .willReturn(new PaymentResult(
                         "payment-key",
@@ -42,12 +49,14 @@ class PaymentControllerTest {
                 ));
 
         // when, then
-        mockMvc.perform(get("/payments/success")
-                        .param("paymentKey", "payment-key")
-                        .param("orderId", "order-id")
-                        .param("amount", "40000"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/?payment=success"));
+        mockMvc.perform(post("/payments/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paymentKey").value("payment-key"))
+                .andExpect(jsonPath("$.orderId").value("order-id"))
+                .andExpect(jsonPath("$.status").value("DONE"))
+                .andExpect(jsonPath("$.amount").value(40_000));
 
         then(paymentConfirmUseCase)
                 .should()
