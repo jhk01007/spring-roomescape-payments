@@ -18,6 +18,7 @@ import roomescape.theme.domain.Theme;
 import roomescape.theme.service.ThemeService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -43,7 +44,7 @@ class AdminThemeControllerTest {
         // given
         Theme theme = Theme.of(1L, "레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme-1.png");
 
-        given(themeService.create(anyString(), anyString(), anyString()))
+        given(themeService.create(anyString(), anyString(), anyString(), anyLong()))
                 .willReturn(theme);
 
         ThemeCreateRequest request = new ThemeCreateRequest("brown", "설명", "섬네일");
@@ -66,10 +67,11 @@ class AdminThemeControllerTest {
                 ThemeResponse::id,
                 ThemeResponse::name,
                 ThemeResponse::description,
-                ThemeResponse::thumbnail
-        ).containsExactly(theme.getId(), theme.getName(), theme.getDescription(), theme.getThumbnail());
+                ThemeResponse::thumbnail,
+                ThemeResponse::price
+        ).containsExactly(theme.getId(), theme.getName(), theme.getDescription(), theme.getThumbnail(), theme.getPrice());
 
-        then(themeService).should().create(request.name(), request.description(), request.thumbnail());
+        then(themeService).should().create(request.name(), request.description(), request.thumbnail(), request.price());
     }
 
     @ParameterizedTest

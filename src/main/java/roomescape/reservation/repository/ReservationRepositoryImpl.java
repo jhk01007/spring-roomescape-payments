@@ -40,6 +40,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 th.name AS theme_name,
                 th.description AS theme_description,
                 th.thumbnail AS theme_thumbnail,
+                th.price AS theme_price,
                 th.deleted_at AS theme_deleted_at,
                 ROW_NUMBER() OVER (
                     PARTITION BY r.date, t.id, th.id, r.status
@@ -255,7 +256,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
 
     private ReservationWaitingDto toReservationWaitingDto(Object row) {
         Object[] columns = (Object[]) row;
-        return ReservationWaitingDto.from(toReservation(columns), toLong(columns[13]));
+        return ReservationWaitingDto.from(toReservation(columns), toLong(columns[14]));
     }
 
     private Reservation toReservation(Object row) {
@@ -270,7 +271,8 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 (String) columns[9],
                 (String) columns[10],
                 (String) columns[11],
-                toLocalDateTime(columns[12])
+                toLong(columns[12]),
+                toLocalDateTime(columns[13])
         );
         return Reservation.of(
                 toLong(columns[0]),

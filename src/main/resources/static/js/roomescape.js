@@ -2,6 +2,7 @@ const API_BASE = "";
     const GUEST_NAME_HEADER = "X-Guest-Name";
     const DEMO_DATE = "2026-05-06";
     const DEFAULT_DATE = todayDate();
+    const DEFAULT_THEME_PRICE = 50000;
     const PAGE = document.body.dataset.page || "user";
 
     const state = {
@@ -43,7 +44,8 @@ const API_BASE = "";
         id,
         name: `Theme ${id}`,
         description: id === 11 ? "Out of range reservations only" : id === 12 ? "No reservations" : `Popular theme rank ${id}`,
-        thumbnail: ""
+        thumbnail: "",
+        price: DEFAULT_THEME_PRICE
       };
     });
 
@@ -126,6 +128,7 @@ const API_BASE = "";
       adminThemeName: $("#adminThemeName"),
       adminThemeDescription: $("#adminThemeDescription"),
       adminThemeThumbnail: $("#adminThemeThumbnail"),
+      adminThemePrice: $("#adminThemePrice"),
       adminReservationForm: $("#adminReservationForm"),
       adminReserveName: $("#adminReserveName"),
       adminReserveDate: $("#adminReserveDate"),
@@ -395,6 +398,10 @@ const API_BASE = "";
       return `${year}.${month}.${date}`;
     }
 
+    function formatPrice(price) {
+      return `${Number(price ?? DEFAULT_THEME_PRICE).toLocaleString("ko-KR")}원`;
+    }
+
     function reservationStatus(reservation) {
       return reservation.status || "CONFIRMED";
     }
@@ -481,7 +488,7 @@ const API_BASE = "";
           <span class="theme-body">
             <span class="theme-name">${escapeHtml(theme.name)}</span>
             <span class="theme-description">${escapeHtml(theme.description || "")}</span>
-            <span class="theme-meta">60분 진행</span>
+            <span class="theme-meta">60분 진행 · ${escapeHtml(formatPrice(theme.price))}</span>
           </span>
         `;
         const img = button.querySelector("img");
@@ -1265,7 +1272,7 @@ const API_BASE = "";
           <img class="admin-thumb" src="${escapeHtml(imageSource)}" alt="${escapeHtml(theme.name)} 썸네일">
           <div class="list-main">
             <span class="list-title">${escapeHtml(theme.name)}</span>
-            <span class="list-meta">${escapeHtml(theme.description || "")}</span>
+            <span class="list-meta">${escapeHtml(theme.description || "")} · ${escapeHtml(formatPrice(theme.price))}</span>
           </div>
           <button class="danger-button" type="button" data-delete-theme-id="${theme.id}">삭제</button>
         `;
@@ -1310,7 +1317,8 @@ const API_BASE = "";
       const payload = {
         name: elements.adminThemeName.value.trim(),
         description: elements.adminThemeDescription.value.trim(),
-        thumbnail: elements.adminThemeThumbnail.value.trim()
+        thumbnail: elements.adminThemeThumbnail.value.trim(),
+        price: Number(elements.adminThemePrice.value || DEFAULT_THEME_PRICE)
       };
       if (!payload.name) {
         setAdminMessage("테마 이름을 입력해주세요.", "error");

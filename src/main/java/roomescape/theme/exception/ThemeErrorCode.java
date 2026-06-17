@@ -10,6 +10,7 @@ public enum ThemeErrorCode implements ErrorPolicy {
     INVALID_THEME_NAME("테마 이름은 비어 있을 수 없습니다.", BAD_REQUEST),
     INVALID_THEME_DESCRIPTION("테마 설명은 비어 있을 수 없습니다.", BAD_REQUEST),
     INVALID_THEME_THUMBNAIL("테마 썸네일은 비어 있을 수 없습니다.", BAD_REQUEST),
+    INVALID_THEME_PRICE("테마 가격은 0보다 커야 합니다.", BAD_REQUEST),
     INVALID_THEME("테마 정보는 비어 있을 수 없습니다.", BAD_REQUEST),
     THEME_ALREADY_HAS_ID("이미 id가 존재하는 테마입니다.", CONFLICT),
     THEME_NOT_FOUND("존재하지 않는 테마입니다.", NOT_FOUND),

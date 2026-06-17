@@ -14,12 +14,15 @@ import java.util.Objects;
 
 import static roomescape.common.domain.DomainPreconditions.require;
 import static roomescape.common.domain.DomainPreconditions.requireNonBlank;
+import static roomescape.common.domain.DomainPreconditions.requireNonNull;
 import static roomescape.theme.exception.ThemeErrorCode.*;
 
 @Getter
 @Entity
 @Table(name = "theme")
 public class Theme {
+    public static final long DEFAULT_PRICE = 50_000L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,6 +36,9 @@ public class Theme {
     @Column(nullable = false)
     private String thumbnail;
 
+    @Column(nullable = false)
+    private Long price;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -44,22 +50,32 @@ public class Theme {
             String name,
             String description,
             String thumbnail,
+            Long price,
             LocalDateTime deletedAt
     ) {
-        validateTheme(name, description, thumbnail);
+        validateTheme(name, description, thumbnail, price);
         this.id = id;
         this.name = name;
         this.description = description;
         this.thumbnail = thumbnail;
+        this.price = price;
         this.deletedAt = deletedAt;
     }
 
     public static Theme create(String name, String description, String thumbnail) {
-        return new Theme(null, name, description, thumbnail, null);
+        return create(name, description, thumbnail, DEFAULT_PRICE);
+    }
+
+    public static Theme create(String name, String description, String thumbnail, Long price) {
+        return new Theme(null, name, description, thumbnail, price, null);
     }
 
     public static Theme of(long id, String name, String description, String thumbnail) {
-        return of(id, name, description, thumbnail, null);
+        return of(id, name, description, thumbnail, DEFAULT_PRICE, null);
+    }
+
+    public static Theme of(long id, String name, String description, String thumbnail, Long price) {
+        return of(id, name, description, thumbnail, price, null);
     }
 
     public static Theme of(
@@ -69,22 +85,35 @@ public class Theme {
             String thumbnail,
             LocalDateTime deletedAt
     ) {
-        return new Theme(id, name, description, thumbnail, deletedAt);
+        return of(id, name, description, thumbnail, DEFAULT_PRICE, deletedAt);
+    }
+
+    public static Theme of(
+            long id,
+            String name,
+            String description,
+            String thumbnail,
+            Long price,
+            LocalDateTime deletedAt
+    ) {
+        return new Theme(id, name, description, thumbnail, price, deletedAt);
     }
 
     public Theme withId(long id) {
         require(this.id == null, new DomainException(THEME_ALREADY_HAS_ID));
-        return of(id, name, description, thumbnail, deletedAt);
+        return of(id, name, description, thumbnail, price, deletedAt);
     }
 
     public void cancel(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
 
-    private void validateTheme(String name, String description, String thumbnail) {
+    private void validateTheme(String name, String description, String thumbnail, Long price) {
         requireNonBlank(name, new DomainException(INVALID_THEME_NAME));
         requireNonBlank(description, new DomainException(INVALID_THEME_DESCRIPTION));
         requireNonBlank(thumbnail, new DomainException(INVALID_THEME_THUMBNAIL));
+        requireNonNull(price, new DomainException(INVALID_THEME_PRICE));
+        require(price > 0, new DomainException(INVALID_THEME_PRICE));
     }
 
     @Override
@@ -97,5 +126,9 @@ public class Theme {
     @Override
     public int hashCode() {
         return Objects.hashCode(id);
+    }
+
+    public boolean isSamePrice(Long price) {
+        return Objects.equals(this.price, price);
     }
 }

@@ -24,7 +24,12 @@ public class ThemeService {
 
     @Transactional
     public Theme create(String name, String description, String thumbnail) {
-        Theme theme = Theme.create(name, description, thumbnail);
+        return create(name, description, thumbnail, Theme.DEFAULT_PRICE);
+    }
+
+    @Transactional
+    public Theme create(String name, String description, String thumbnail, Long price) {
+        Theme theme = Theme.create(name, description, thumbnail, price);
 
         return themeRepository.save(theme);
     }

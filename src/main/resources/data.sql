@@ -1,16 +1,16 @@
-INSERT INTO theme (id, name, description, thumbnail) VALUES
-    (1, 'Theme 1', 'Popular theme rank 1', 'https://example.com/theme-1.png'),
-    (2, 'Theme 2', 'Popular theme rank 2', 'https://example.com/theme-2.png'),
-    (3, 'Theme 3', 'Popular theme rank 3', 'https://example.com/theme-3.png'),
-    (4, 'Theme 4', 'Popular theme rank 4', 'https://example.com/theme-4.png'),
-    (5, 'Theme 5', 'Popular theme rank 5', 'https://example.com/theme-5.png'),
-    (6, 'Theme 6', 'Popular theme rank 6', 'https://example.com/theme-6.png'),
-    (7, 'Theme 7', 'Popular theme rank 7', 'https://example.com/theme-7.png'),
-    (8, 'Theme 8', 'Popular theme rank 8', 'https://example.com/theme-8.png'),
-    (9, 'Theme 9', 'Popular theme rank 9', 'https://example.com/theme-9.png'),
-    (10, 'Theme 10', 'Popular theme rank 10', 'https://example.com/theme-10.png'),
-    (11, 'Theme 11', 'Out of range reservations only', 'https://example.com/theme-11.png'),
-    (12, 'Theme 12', 'No reservations', 'https://example.com/theme-12.png');
+INSERT INTO theme (id, name, description, thumbnail, price) VALUES
+    (1, 'Theme 1', 'Popular theme rank 1', 'https://example.com/theme-1.png', 50000),
+    (2, 'Theme 2', 'Popular theme rank 2', 'https://example.com/theme-2.png', 50000),
+    (3, 'Theme 3', 'Popular theme rank 3', 'https://example.com/theme-3.png', 50000),
+    (4, 'Theme 4', 'Popular theme rank 4', 'https://example.com/theme-4.png', 50000),
+    (5, 'Theme 5', 'Popular theme rank 5', 'https://example.com/theme-5.png', 50000),
+    (6, 'Theme 6', 'Popular theme rank 6', 'https://example.com/theme-6.png', 50000),
+    (7, 'Theme 7', 'Popular theme rank 7', 'https://example.com/theme-7.png', 50000),
+    (8, 'Theme 8', 'Popular theme rank 8', 'https://example.com/theme-8.png', 50000),
+    (9, 'Theme 9', 'Popular theme rank 9', 'https://example.com/theme-9.png', 50000),
+    (10, 'Theme 10', 'Popular theme rank 10', 'https://example.com/theme-10.png', 50000),
+    (11, 'Theme 11', 'Out of range reservations only', 'https://example.com/theme-11.png', 50000),
+    (12, 'Theme 12', 'No reservations', 'https://example.com/theme-12.png', 50000);
 
 INSERT INTO reservation_time (id, start_at) VALUES
     (1, '10:00:00'),

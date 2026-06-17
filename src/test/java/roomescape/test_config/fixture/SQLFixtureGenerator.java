@@ -71,7 +71,11 @@ public class SQLFixtureGenerator {
     }
 
     public Theme insertTheme(String name, String description, String thumbnail) {
-        Theme theme = Theme.create(name, description, thumbnail);
+        return insertTheme(name, description, thumbnail, Theme.DEFAULT_PRICE);
+    }
+
+    public Theme insertTheme(String name, String description, String thumbnail, Long price) {
+        Theme theme = Theme.create(name, description, thumbnail, price);
         entityManager.persist(theme);
         flush();
         return theme;

@@ -35,6 +35,7 @@ public interface JpaThemeRepository extends JpaRepository<Theme, Long> {
                 t.name,
                 t.description,
                 t.thumbnail,
+                t.price,
                 t.deleted_at
             FROM theme t
             INNER JOIN reservation r
@@ -42,7 +43,7 @@ public interface JpaThemeRepository extends JpaRepository<Theme, Long> {
                 AND r.status != 'CANCELED'
             WHERE r.date BETWEEN :startDate AND :endDate
                 AND t.deleted_at IS NULL
-            GROUP BY t.id, t.name, t.description, t.thumbnail, t.deleted_at
+            GROUP BY t.id, t.name, t.description, t.thumbnail, t.price, t.deleted_at
             ORDER BY COUNT(r.id) DESC
             LIMIT :limit
             """, nativeQuery = true)

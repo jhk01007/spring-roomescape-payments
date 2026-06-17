@@ -60,6 +60,22 @@ class ThemeTest {
     }
 
     @Test
+    void 테마_가격이_null이면_도메인_예외가_발생한다() {
+        assertDomainException(
+                () -> Theme.create("테마", "설명", "https://example.com/theme.png", null),
+                INVALID_THEME_PRICE
+        );
+    }
+
+    @Test
+    void 테마_가격이_0보다_작거나_같으면_도메인_예외가_발생한다() {
+        assertDomainException(
+                () -> Theme.create("테마", "설명", "https://example.com/theme.png", 0L),
+                INVALID_THEME_PRICE
+        );
+    }
+
+    @Test
     void 이미_id가_있는_테마에_id를_부여하면_도메인_예외가_발생한다() {
         Theme theme = Theme.of(1L, "테마", "설명", "https://example.com/theme.png");
 

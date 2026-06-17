@@ -4,6 +4,7 @@ CREATE TABLE theme
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(255) NOT NULL,
     thumbnail   VARCHAR(255) NOT NULL,
+    price       BIGINT       NOT NULL,
     deleted_at  TIMESTAMP,
     PRIMARY KEY (id)
 );
