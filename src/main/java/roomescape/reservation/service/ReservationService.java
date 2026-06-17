@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.Status;
+import roomescape.reservation.service.dto.ReservationSlotAvailability;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservation.service.validator.ReservationValidator;
 import roomescape.reservationtime.domain.ReservationTime;
@@ -25,6 +26,7 @@ import static roomescape.reservation.domain.Status.CONFIRMED;
 import static roomescape.reservation.domain.Status.PENDING;
 import static roomescape.reservation.domain.Status.WAITING;
 import static roomescape.reservation.exception.ReservationErrorCode.*;
+import static roomescape.reservation.service.dto.ReservationSlotAvailability.*;
 import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.*;
 import static roomescape.theme.exception.ThemeErrorCode.*;
 
@@ -63,6 +65,22 @@ public class ReservationService {
         return reservationRepository.findWaitingAllByGuestName(guestName).stream()
                 .map(ReservationWaitingResult::from)
                 .toList();
+    }
+
+    public ReservationSlotAvailability findSlotAvailability(LocalDate date, Long timeId, Long themeId) {
+        ReservationTime time = getReservationTime(timeId);
+        getTheme(themeId);
+
+        if (LocalDateTime.of(date, time.getStartAt()).isBefore(LocalDateTime.now(clock))) {
+            return UNAVAILABLE;
+        }
+        if (reservationRepository.existsBySlotAndStatusConfirmedOrPending(date, timeId, themeId)) {
+            return ReservationSlotAvailability.WAITING;
+        }
+        if (reservationRepository.existsBySlot(date, timeId, themeId)) {
+            return UNAVAILABLE;
+        }
+        return AVAILABLE;
     }
 
     @Transactional

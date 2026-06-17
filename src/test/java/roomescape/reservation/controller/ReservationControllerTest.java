@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import roomescape.reservation.controller.dto.*;
 import roomescape.reservation.domain.Status;
+import roomescape.reservation.service.dto.ReservationSlotAvailability;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservationtime.controller.dto.ReservationTimeResponse;
 import roomescape.test_config.integration.controller.ControllerTest;
@@ -129,6 +130,32 @@ class ReservationControllerTest {
                 ThemeResponse::description,
                 ThemeResponse::thumbnail
         ).containsExactly(theme.getId(), theme.getName(), theme.getDescription(), theme.getThumbnail());
+    }
+
+    @Test
+    @DisplayName("예약 가능 여부를 조회하면 선택한 슬롯의 예약 가능 상태를 응답한다.")
+    public void getAvailability_success() throws Exception {
+        // given
+        LocalDate date = LocalDate.of(2023, 8, 5);
+        Long timeId = 1L;
+        Long themeId = 1L;
+
+        given(reservationService.findSlotAvailability(any(), anyLong(), anyLong()))
+                .willReturn(ReservationSlotAvailability.AVAILABLE);
+
+        // when then
+        mockMvc.perform(
+                        get("/reservations/availability")
+                                .param("date", date.toString())
+                                .param("timeId", timeId.toString())
+                                .param("themeId", themeId.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availability").value("AVAILABLE"));
+
+        then(reservationService)
+                .should()
+                .findSlotAvailability(date, timeId, themeId);
     }
 
     @ParameterizedTest

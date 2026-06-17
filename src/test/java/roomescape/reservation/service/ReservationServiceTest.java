@@ -12,6 +12,7 @@ import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.Status;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
+import roomescape.reservation.service.dto.ReservationSlotAvailability;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservationtime.domain.ReservationTimeRepository;
@@ -139,6 +140,81 @@ class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.createWaiting("포비", pastDate, time.getId(), theme.getId()))
                 .isInstanceOf(DomainException.class)
                 .hasMessage(PAST_RESERVATION_NOT_ALLOWED.message());
+    }
+
+    @Test
+    @DisplayName("확정 또는 결제 대기 예약이 없는 미래 슬롯은 예약 가능 상태로 조회된다.")
+    public void findSlotAvailability_available() {
+        // given
+        ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
+        Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
+        LocalDate date = LocalDate.of(2025, 5, 11);
+
+        clock.setFixed(LocalDate.of(2025, 5, 10));
+
+        // when
+        ReservationSlotAvailability result =
+                reservationService.findSlotAvailability(date, time.getId(), theme.getId());
+
+        // then
+        assertThat(result).isEqualTo(ReservationSlotAvailability.AVAILABLE);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CONFIRMED", "PENDING"})
+    @DisplayName("확정 또는 결제 대기 예약이 있는 미래 슬롯은 대기 가능 상태로 조회된다.")
+    public void findSlotAvailability_waiting(Status status) {
+        // given
+        ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
+        Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
+        LocalDate date = LocalDate.of(2025, 5, 11);
+
+        insertReservation("포비", date, time, theme, status);
+        clock.setFixed(LocalDate.of(2025, 5, 10));
+
+        // when
+        ReservationSlotAvailability result =
+                reservationService.findSlotAvailability(date, time.getId(), theme.getId());
+
+        // then
+        assertThat(result).isEqualTo(ReservationSlotAvailability.WAITING);
+    }
+
+    @Test
+    @DisplayName("대기 예약만 있는 슬롯은 신청 불가 상태로 조회된다.")
+    public void findSlotAvailability_unavailable_waitingOnly() {
+        // given
+        ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
+        Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
+        LocalDate date = LocalDate.of(2025, 5, 11);
+
+        insertReservation("포비", date, time, theme, WAITING);
+        clock.setFixed(LocalDate.of(2025, 5, 10));
+
+        // when
+        ReservationSlotAvailability result =
+                reservationService.findSlotAvailability(date, time.getId(), theme.getId());
+
+        // then
+        assertThat(result).isEqualTo(ReservationSlotAvailability.UNAVAILABLE);
+    }
+
+    @Test
+    @DisplayName("이미 지난 슬롯은 신청 불가 상태로 조회된다.")
+    public void findSlotAvailability_unavailable_past() {
+        // given
+        ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
+        Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
+        LocalDate date = LocalDate.of(2025, 5, 10);
+
+        clock.setFixed(LocalDateTime.of(2025, 5, 10, 10, 1));
+
+        // when
+        ReservationSlotAvailability result =
+                reservationService.findSlotAvailability(date, time.getId(), theme.getId());
+
+        // then
+        assertThat(result).isEqualTo(ReservationSlotAvailability.UNAVAILABLE);
     }
 
     @Test

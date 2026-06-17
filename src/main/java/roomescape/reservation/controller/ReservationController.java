@@ -30,6 +30,14 @@ public class ReservationController {
                 .body(ReservationWaitingResponse.from(reservationWaitingResult));
     }
 
+    @GetMapping("/availability")
+    public ResponseEntity<ReservationAvailabilityResponse> getAvailability(
+            @ModelAttribute @Valid ReservationAvailabilityRequest request
+    ) {
+        return ResponseEntity.ok(ReservationAvailabilityResponse.from(
+                reservationService.findSlotAvailability(request.date(), request.timeId(), request.themeId())));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<ReservationWaitingListResponse> getListByGuestName(@CurrentUser String guestName) {
 

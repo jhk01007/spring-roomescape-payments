@@ -4,6 +4,10 @@ const API_BASE = "";
     const DEFAULT_DATE = todayDate();
     const DEFAULT_THEME_PRICE = 50000;
     const PAGE = document.body.dataset.page || "user";
+    const SLOT_AVAILABLE = "AVAILABLE";
+    const SLOT_WAITING = "WAITING";
+    const SLOT_UNAVAILABLE = "UNAVAILABLE";
+    const SLOT_LOADING = "LOADING";
 
     const state = {
       currentView: "user",
@@ -24,6 +28,11 @@ const API_BASE = "";
       ],
       selectedThemeId: null,
       selectedTimeId: null,
+      selectedSlotAvailability: null,
+      slotAvailabilityRequestId: 0,
+      paymentDraft: null,
+      paymentWidgets: null,
+      paymentRendering: false,
       editingReservationId: null,
       editingReservationThemeId: null,
       cancelingReservationId: null,
@@ -107,6 +116,13 @@ const API_BASE = "";
       lookupList: $("#lookupList"),
       lookupCount: $("#lookupCount"),
       summaryStatus: $("#summaryStatus"),
+      paymentPanel: $("#paymentPanel"),
+      paymentSummary: $("#paymentSummary"),
+      paymentAmount: $("#paymentAmount"),
+      paymentMethod: $("#paymentMethod"),
+      paymentAgreement: $("#paymentAgreement"),
+      paymentButton: $("#paymentButton"),
+      paymentMessage: $("#paymentMessage"),
       editReservationForm: $("#editReservationForm"),
       editReservationTitle: $("#editReservationTitle"),
       editReservationMeta: $("#editReservationMeta"),
@@ -343,6 +359,10 @@ const API_BASE = "";
       setInlineMessage(elements.formMessage, "message", text, type);
     }
 
+    function setPaymentMessage(text, type = "") {
+      setInlineMessage(elements.paymentMessage, "message", text, type);
+    }
+
     function setLookupMessage(text, type = "") {
       setInlineMessage(elements.lookupMessage, "message", text, type);
     }
@@ -376,6 +396,44 @@ const API_BASE = "";
 
     function selectedTime() {
       return state.times.find((time) => time.id === state.selectedTimeId) || null;
+    }
+
+    function currentSlotAvailability() {
+      return state.selectedSlotAvailability?.availability || null;
+    }
+
+    function availabilityLabel(availability) {
+      if (availability === SLOT_AVAILABLE) {
+        return "예약 가능";
+      }
+      if (availability === SLOT_WAITING) {
+        return "대기 가능";
+      }
+      if (availability === SLOT_UNAVAILABLE) {
+        return "신청 불가";
+      }
+      if (availability === SLOT_LOADING) {
+        return "상태 확인 중";
+      }
+      return "상태 미확인";
+    }
+
+    function availabilityClass(availability) {
+      if (availability === SLOT_AVAILABLE) {
+        return "available";
+      }
+      if (availability === SLOT_WAITING) {
+        return "waiting";
+      }
+      if (availability === SLOT_UNAVAILABLE) {
+        return "unavailable";
+      }
+      return "";
+    }
+
+    function resetSlotAvailability() {
+      state.slotAvailabilityRequestId += 1;
+      state.selectedSlotAvailability = null;
     }
 
     function selectedAdminTheme() {
@@ -420,7 +478,13 @@ const API_BASE = "";
     }
 
     function statusBadgeHtml(status, waitNumber) {
-      const badgeClass = status === "WAITING" ? "waiting" : status === "CANCELED" ? "canceled" : "confirmed";
+      const badgeClass = status === "WAITING"
+        ? "waiting"
+        : status === "PENDING"
+          ? "pending"
+          : status === "CANCELED"
+            ? "canceled"
+            : "confirmed";
       const label = status === "WAITING" && waitNumber
         ? `${statusLabel(status)} ${waitNumber}번`
         : statusLabel(status);
@@ -433,6 +497,28 @@ const API_BASE = "";
 
     function isConfirmedReservation(reservation) {
       return reservationStatus(reservation) === "CONFIRMED";
+    }
+
+    function isOccupyingReservation(reservation) {
+      const status = reservationStatus(reservation);
+      return status === "CONFIRMED" || status === "PENDING";
+    }
+
+    function clearPaymentDraft() {
+      state.paymentDraft = null;
+      state.paymentWidgets = null;
+      state.paymentRendering = false;
+      if (!elements.paymentPanel) {
+        return;
+      }
+
+      elements.paymentPanel.hidden = true;
+      elements.paymentSummary.textContent = "";
+      elements.paymentAmount.textContent = "";
+      elements.paymentMethod.innerHTML = "";
+      elements.paymentAgreement.innerHTML = "";
+      elements.paymentButton.disabled = true;
+      setPaymentMessage("");
     }
 
     function isSameSlot(reservation, date, timeId, themeId) {
@@ -464,6 +550,8 @@ const API_BASE = "";
         item.addEventListener("click", () => {
           state.selectedThemeId = theme.id;
           state.selectedTimeId = null;
+          resetSlotAvailability();
+          clearPaymentDraft();
           renderThemes();
           renderTimes();
         });
@@ -501,11 +589,84 @@ const API_BASE = "";
         button.addEventListener("click", () => {
           state.selectedThemeId = theme.id;
           state.selectedTimeId = null;
+          resetSlotAvailability();
+          clearPaymentDraft();
           renderThemes();
           renderTimes();
         });
         elements.themeGrid.appendChild(button);
       });
+    }
+
+    function demoSlotAvailability(date, timeId, themeId) {
+      const time = state.times.find((item) => item.id === Number(timeId));
+      if (!time) {
+        return SLOT_UNAVAILABLE;
+      }
+
+      const slotDateTime = new Date(`${date}T${normalizeTime(time.startAt)}:00`);
+      if (!Number.isNaN(slotDateTime.getTime()) && slotDateTime < new Date()) {
+        return SLOT_UNAVAILABLE;
+      }
+
+      const activeReservations = state.demoReservations.filter((reservation) =>
+        isActiveReservation(reservation) && isSameSlot(reservation, date, timeId, themeId)
+      );
+      if (activeReservations.some(isOccupyingReservation)) {
+        return SLOT_WAITING;
+      }
+      if (activeReservations.length > 0) {
+        return SLOT_UNAVAILABLE;
+      }
+      return SLOT_AVAILABLE;
+    }
+
+    async function fetchSlotAvailability(date, timeId, themeId) {
+      if (state.mode !== "live") {
+        return { availability: demoSlotAvailability(date, timeId, themeId) };
+      }
+
+      const params = new URLSearchParams({
+        date,
+        timeId: String(timeId),
+        themeId: String(themeId)
+      });
+      return getJson(`/reservations/availability?${params.toString()}`);
+    }
+
+    async function loadSelectedSlotAvailability() {
+      const theme = selectedTheme();
+      const time = selectedTime();
+      const date = elements.dateInput.value;
+      if (!theme || !time || !date) {
+        resetSlotAvailability();
+        syncSummary();
+        return;
+      }
+
+      const requestId = state.slotAvailabilityRequestId + 1;
+      state.slotAvailabilityRequestId = requestId;
+      state.selectedSlotAvailability = { availability: SLOT_LOADING };
+      renderTimes();
+      syncSummary();
+
+      try {
+        const result = await fetchSlotAvailability(date, time.id, theme.id);
+        if (state.slotAvailabilityRequestId !== requestId) {
+          return;
+        }
+        state.selectedSlotAvailability = { availability: result.availability || SLOT_UNAVAILABLE };
+        renderTimes();
+        syncSummary();
+      } catch (error) {
+        if (state.slotAvailabilityRequestId !== requestId) {
+          return;
+        }
+        state.selectedSlotAvailability = { availability: SLOT_UNAVAILABLE };
+        renderTimes();
+        syncSummary();
+        setFormMessage(endpointMessageOr(error, "슬롯 상태를 확인하지 못했습니다."));
+      }
     }
 
     function renderTimes() {
@@ -529,11 +690,20 @@ const API_BASE = "";
         .forEach((time) => {
           const button = document.createElement("button");
           button.type = "button";
-          button.className = `time-button${time.id === state.selectedTimeId ? " selected" : ""}`;
-          button.textContent = normalizeTime(time.startAt);
+          const isSelected = time.id === state.selectedTimeId;
+          const availability = isSelected ? currentSlotAvailability() : null;
+          const slotClass = availabilityClass(availability);
+          button.className = `time-button${isSelected ? " selected" : ""}${slotClass ? ` ${slotClass}` : ""}`;
+          button.innerHTML = `
+            <span>${escapeHtml(normalizeTime(time.startAt))}</span>
+            ${isSelected && availability ? `<span class="time-state">${escapeHtml(availabilityLabel(availability))}</span>` : ""}
+          `;
           button.addEventListener("click", () => {
             state.selectedTimeId = time.id;
+            resetSlotAvailability();
+            clearPaymentDraft();
             renderTimes();
+            loadSelectedSlotAvailability();
           });
           elements.timeGrid.appendChild(button);
         });
@@ -544,16 +714,47 @@ const API_BASE = "";
     function syncSummary() {
       const theme = selectedTheme();
       const time = selectedTime();
+      const availability = currentSlotAvailability();
       elements.dateNote.textContent = `${formatDate(elements.dateInput.value)} 기준으로 등록된 모든 예약 시간을 선택할 수 있습니다.`;
       elements.summaryDate.textContent = formatDate(elements.dateInput.value);
       elements.summaryTheme.textContent = theme ? theme.name : "-";
       elements.summaryTime.textContent = time ? normalizeTime(time.startAt) : "-";
-      elements.summaryStatus.textContent = time ? "예약/대기 신청" : "-";
+      elements.summaryStatus.textContent = time ? availabilityLabel(availability) : "-";
 
-      const canReserve = Boolean(elements.nameInput.value.trim() && theme && time);
+      const hasRequiredInput = Boolean(elements.nameInput.value.trim() && theme && time);
+      const canReserve = hasRequiredInput &&
+        !state.paymentDraft &&
+        (availability === SLOT_AVAILABLE || availability === SLOT_WAITING);
       elements.reserveButton.disabled = !canReserve;
-      elements.reserveButton.textContent = "예약/대기 신청하기";
-      setFormMessage(canReserve ? "" : "이름, 테마, 시간을 모두 선택하면 예약하거나 대기할 수 있습니다.");
+      elements.reserveButton.textContent = availability === SLOT_AVAILABLE
+        ? "결제하기"
+        : availability === SLOT_WAITING
+          ? "대기 신청하기"
+          : availability === SLOT_LOADING
+            ? "상태 확인 중"
+            : "신청 불가";
+
+      if (state.paymentDraft) {
+        setFormMessage("결제수단을 선택한 뒤 결제를 진행해주세요.", "ok");
+        return;
+      }
+      if (!theme || !time) {
+        setFormMessage("테마와 시간을 선택하면 예약 가능 여부를 확인합니다.");
+        return;
+      }
+      if (availability === SLOT_LOADING) {
+        setFormMessage("선택한 슬롯의 예약 가능 여부를 확인하고 있습니다.");
+        return;
+      }
+      if (availability === SLOT_AVAILABLE) {
+        setFormMessage(hasRequiredInput ? "예약 가능한 슬롯입니다. 결제를 진행할 수 있습니다." : "이름을 입력하면 결제를 시작할 수 있습니다.");
+        return;
+      }
+      if (availability === SLOT_WAITING) {
+        setFormMessage(hasRequiredInput ? "이미 점유된 슬롯입니다. 대기 예약을 신청할 수 있습니다." : "이름을 입력하면 대기 예약을 신청할 수 있습니다.");
+        return;
+      }
+      setFormMessage(time ? "현재 이 슬롯은 신청할 수 없습니다." : "이름, 테마, 시간을 모두 선택하면 예약하거나 대기할 수 있습니다.");
     }
 
     function nextDemoWaitNumber(date, timeId, themeId, excludedId = null) {
@@ -569,7 +770,7 @@ const API_BASE = "";
       return state.demoReservations.some((reservation) =>
         reservation.id !== excludedId &&
         isActiveReservation(reservation) &&
-        isConfirmedReservation(reservation) &&
+        isOccupyingReservation(reservation) &&
         isSameSlot(reservation, date, timeId, themeId)
       );
     }
@@ -606,6 +807,40 @@ const API_BASE = "";
       };
     }
 
+    function createDemoPaymentReservation(payload) {
+      if (demoSlotAvailability(payload.date, payload.timeId, payload.themeId) !== SLOT_AVAILABLE) {
+        throw new Error("예약 가능한 슬롯만 결제를 시작할 수 있습니다.");
+      }
+      return {
+        id: getNextId(state.demoReservations),
+        guestName: payload.guestName,
+        date: payload.date,
+        themeId: payload.themeId,
+        timeId: payload.timeId,
+        status: "PENDING"
+      };
+    }
+
+    function createDemoWaitingReservation(payload) {
+      if (demoSlotAvailability(payload.date, payload.timeId, payload.themeId) !== SLOT_WAITING) {
+        throw new Error("대기 가능한 슬롯만 대기 예약을 신청할 수 있습니다.");
+      }
+      if (hasDuplicateDemoReservation(payload.guestName, payload.date, payload.timeId, payload.themeId)) {
+        throw new Error("이미 같은 시간대에 대기 중입니다.");
+      }
+
+      const waitNumber = nextDemoWaitNumber(payload.date, payload.timeId, payload.themeId);
+      return {
+        id: getNextId(state.demoReservations),
+        guestName: payload.guestName,
+        date: payload.date,
+        themeId: payload.themeId,
+        timeId: payload.timeId,
+        status: "WAITING",
+        waitNumber
+      };
+    }
+
     function createPendingReservation(payload, paymentReservation) {
       return {
         id: paymentReservation.reservationId,
@@ -615,6 +850,117 @@ const API_BASE = "";
         timeId: payload.timeId,
         status: "PENDING"
       };
+    }
+
+    function normalizeWaitingReservation(response, payload) {
+      return {
+        id: response.id,
+        guestName: response.guestName || payload.guestName,
+        date: response.date || payload.date,
+        theme: response.theme,
+        time: response.time,
+        themeId: response.theme?.id || payload.themeId,
+        timeId: response.time?.id || payload.timeId,
+        status: response.status || "WAITING",
+        waitNumber: response.waitNumber
+      };
+    }
+
+    async function openPaymentPanel(payload, paymentReservation, theme, time) {
+      if (!elements.paymentPanel) {
+        return;
+      }
+
+      clearPaymentDraft();
+      state.paymentDraft = {
+        reservationId: paymentReservation.reservationId,
+        amount: paymentReservation.amount,
+        orderName: paymentReservation.orderName,
+        payload,
+        themeName: theme.name,
+        timeLabel: normalizeTime(time.startAt)
+      };
+      renderTimes();
+      syncSummary();
+
+      elements.paymentPanel.hidden = false;
+      elements.paymentSummary.textContent = `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}`;
+      elements.paymentAmount.textContent = formatPrice(paymentReservation.amount);
+      elements.paymentButton.disabled = true;
+
+      if (state.mode !== "live") {
+        elements.paymentMethod.innerHTML = `<p class="payment-summary">데모 모드에서는 실제 결제위젯을 렌더링하지 않습니다.</p>`;
+        setPaymentMessage("라이브 서버에서 결제수단을 선택할 수 있습니다.", "ok");
+        return;
+      }
+
+      const clientKey = window.ROOMESCAPE_PAYMENT?.clientKey;
+      if (!clientKey) {
+        setPaymentMessage("Toss 클라이언트 키가 설정되지 않아 결제수단을 렌더링할 수 없습니다.");
+        return;
+      }
+      if (typeof window.TossPayments !== "function") {
+        setPaymentMessage("Toss 결제위젯 SDK를 불러오지 못했습니다.");
+        return;
+      }
+
+      state.paymentRendering = true;
+      setPaymentMessage("결제수단을 불러오고 있습니다.");
+      try {
+        const tossPayments = window.TossPayments(clientKey);
+        const widgets = tossPayments.widgets({ customerKey: window.TossPayments.ANONYMOUS });
+        state.paymentWidgets = widgets;
+
+        await widgets.setAmount({ currency: "KRW", value: Number(paymentReservation.amount) });
+        await Promise.all([
+          widgets.renderPaymentMethods({ selector: "#paymentMethod", variantKey: "DEFAULT" }),
+          widgets.renderAgreement({ selector: "#paymentAgreement", variantKey: "AGREEMENT" })
+        ]);
+
+        elements.paymentButton.disabled = false;
+        setPaymentMessage("결제수단을 선택한 뒤 결제를 진행해주세요.", "ok");
+      } catch (error) {
+        setPaymentMessage(endpointMessageOr(error, "결제수단을 불러오지 못했습니다."));
+      } finally {
+        state.paymentRendering = false;
+      }
+    }
+
+    async function submitPayment() {
+      const draft = state.paymentDraft;
+      if (!draft || state.paymentRendering) {
+        return;
+      }
+      if (state.mode !== "live") {
+        setPaymentMessage("데모 모드에서는 결제 요청을 보낼 수 없습니다.");
+        return;
+      }
+      if (!state.paymentWidgets) {
+        setPaymentMessage("결제위젯이 준비되지 않았습니다.");
+        return;
+      }
+
+      elements.paymentButton.disabled = true;
+      setPaymentMessage("결제 정보를 저장하고 있습니다.");
+      try {
+        const prepared = await postJson("/payments/prepare", { reservationId: draft.reservationId });
+        await state.paymentWidgets.setAmount({ currency: "KRW", value: Number(prepared.amount) });
+
+        await state.paymentWidgets.requestPayment({
+          orderId: prepared.orderId,
+          orderName: prepared.orderName,
+          customerName: draft.payload.guestName,
+          successUrl: window.location.origin + "/payments/success",
+          failUrl: window.location.origin + "/payments/fail"
+        });
+      } catch (error) {
+        if (error.code === "USER_CANCEL") {
+          setPaymentMessage("결제가 취소되었습니다. 결제수단을 다시 선택할 수 있습니다.");
+        } else {
+          setPaymentMessage(endpointMessageOr(error, "결제 요청에 실패했습니다."), "error");
+        }
+        elements.paymentButton.disabled = false;
+      }
     }
 
     async function reserve() {
@@ -634,36 +980,67 @@ const API_BASE = "";
       };
 
       try {
+        const availabilityResult = await fetchSlotAvailability(payload.date, payload.timeId, payload.themeId);
+        const availability = availabilityResult.availability || SLOT_UNAVAILABLE;
+        state.selectedSlotAvailability = { availability };
+        renderTimes();
+        syncSummary();
+
         let createdReservation = null;
-        if (state.mode === "live") {
-          const paymentReservation = await postJson("/payments/reservations", payload);
-          createdReservation = createPendingReservation(payload, paymentReservation);
+        if (availability === SLOT_AVAILABLE) {
+          let paymentReservation = null;
+          if (state.mode === "live") {
+            paymentReservation = await postJson("/payments/reservations", payload);
+            createdReservation = createPendingReservation(payload, paymentReservation);
+          } else {
+            createdReservation = createDemoPaymentReservation(payload);
+            paymentReservation = {
+              reservationId: createdReservation.id,
+              amount: theme.price ?? DEFAULT_THEME_PRICE,
+              orderName: theme.name
+            };
+            state.demoReservations = [...state.demoReservations, createdReservation];
+          }
+          state.reservations = [...state.reservations, createdReservation];
+          state.selectedSlotAvailability = { availability: SLOT_WAITING };
+          await openPaymentPanel(payload, paymentReservation, theme, time);
+          showToast(
+            `${name}님의 결제 대기 예약이 생성되었습니다.`,
+            `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}`
+          );
+          renderTimes();
+          syncSummary();
+          return;
+        }
+
+        if (availability === SLOT_WAITING) {
+          if (state.mode === "live") {
+            const waitingReservation = await postJson("/reservations/waiting", payload);
+            createdReservation = normalizeWaitingReservation(waitingReservation, payload);
+          } else {
+            createdReservation = createDemoWaitingReservation(payload);
+            state.demoReservations = [...state.demoReservations, createdReservation];
+          }
         } else {
-          createdReservation = createDemoReservation(payload);
-          state.demoReservations = [...state.demoReservations, createdReservation];
+          throw new Error("현재 이 슬롯은 신청할 수 없습니다.");
         }
         state.reservations = [...state.reservations, createdReservation];
 
         const createdStatus = reservationStatus(createdReservation);
         const isWaiting = createdStatus === "WAITING";
-        const isPending = createdStatus === "PENDING";
         const waitNumber = createdReservation.waitNumber;
         showToast(
-          isWaiting
-            ? `${name}님의 대기 신청이 완료되었습니다.`
-            : isPending
-              ? `${name}님의 결제 대기 예약이 생성되었습니다.`
-              : `${name}님의 예약이 완료되었습니다.`,
+          isWaiting ? `${name}님의 대기 신청이 완료되었습니다.` : `${name}님의 예약이 완료되었습니다.`,
           `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}${isWaiting && waitNumber ? ` · 대기 ${waitNumber}번` : ""}`
         );
         elements.nameInput.value = "";
         state.selectedTimeId = null;
+        resetSlotAvailability();
+        clearPaymentDraft();
         renderTimes();
         setFormMessage(isWaiting
           ? `대기 신청이 완료되었습니다.${waitNumber ? ` 현재 대기 ${waitNumber}번입니다.` : ""}`
-          : isPending
-            ? "결제 대기 예약이 생성되었습니다."
-            : "예약이 완료되었습니다.", "ok");
+          : "예약이 완료되었습니다.", "ok");
       } catch (error) {
         setFormMessage(endpointMessageOr(error, "예약 요청에 실패했습니다."), "error");
       }
@@ -1575,10 +1952,13 @@ const API_BASE = "";
     if (isUserPage()) {
       elements.dateInput.addEventListener("change", () => {
         state.selectedTimeId = null;
+        resetSlotAvailability();
+        clearPaymentDraft();
         renderTimes();
       });
       elements.nameInput.addEventListener("input", syncSummary);
       elements.reserveButton.addEventListener("click", reserve);
+      elements.paymentButton.addEventListener("click", submitPayment);
       elements.lookupForm.addEventListener("submit", lookupReservations);
       elements.lookupList.addEventListener("click", (event) => {
         const editButton = event.target.closest("[data-edit-reservation-id]");

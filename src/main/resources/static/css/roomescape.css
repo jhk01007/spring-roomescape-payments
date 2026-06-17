@@ -453,6 +453,30 @@
       transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
     }
 
+    .time-button .time-state {
+      font-size: 11px;
+      font-weight: 850;
+      line-height: 1;
+      color: var(--muted);
+    }
+
+    .time-button.selected .time-state {
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .time-button.available {
+      border-color: #0b6263;
+    }
+
+    .time-button.waiting {
+      border-color: #d66d3f;
+    }
+
+    .time-button.unavailable {
+      border-color: #b9c5c2;
+      color: #8f887e;
+    }
+
     .time-button:disabled {
       color: #9d968b;
       background: var(--surface-2);
@@ -630,6 +654,53 @@
     .reserve-button:disabled {
       background: #b9c5c2;
       cursor: not-allowed;
+    }
+
+    .payment-panel {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .payment-panel[hidden] {
+      display: none;
+    }
+
+    .payment-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .payment-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .payment-summary {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+      word-break: keep-all;
+    }
+
+    .payment-amount {
+      flex: none;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .payment-widget-host {
+      min-width: 0;
     }
 
     .message {
@@ -953,6 +1024,11 @@
     .status-badge.waiting {
       background: #fff0e8;
       color: #9a4428;
+    }
+
+    .status-badge.pending {
+      background: #eaf1ff;
+      color: #2557a7;
     }
 
     .status-badge.canceled {

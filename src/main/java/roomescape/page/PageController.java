@@ -1,5 +1,6 @@
 package roomescape.page;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,7 +8,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class PageController {
 
-    private static final String ASSET_VERSION = "popup-errors-2";
+    private static final String ASSET_VERSION = "payment-flow-1";
+
+    private final String tossClientKey;
+
+    public PageController(@Value("${toss.client-key:}") String tossClientKey) {
+        this.tossClientKey = tossClientKey;
+    }
 
     @GetMapping("/")
     public String index(Model model) {
@@ -36,5 +43,6 @@ public class PageController {
         model.addAttribute("pageTitle", pageTitle);
         model.addAttribute("brandSubtitle", brandSubtitle);
         model.addAttribute("assetVersion", ASSET_VERSION);
+        model.addAttribute("tossClientKey", tossClientKey);
     }
 }
