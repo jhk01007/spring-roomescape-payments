@@ -1277,6 +1277,52 @@ const API_BASE = "";
       elements.cancelAuthorizationName.focus();
     }
 
+    async function startPaymentReservation(id) {
+      const reservation = findReservation(id);
+      if (!reservation) {
+        return;
+      }
+
+      if (reservationStatus(reservation) !== "PENDING") {
+        setLookupMessage("결제 대기 상태의 예약만 결제할 수 있습니다.", "error");
+        return;
+      }
+
+      const theme = getReservationTheme(reservation);
+      const time = getReservationTime(reservation);
+      const themeId = getReservationThemeId(reservation);
+      const timeId = getReservationTimeId(reservation);
+      if (!theme || !time || !themeId || !timeId) {
+        setLookupMessage("결제에 필요한 예약 정보를 찾을 수 없습니다.", "error");
+        return;
+      }
+
+      clearEditReservation();
+      clearCancelReservation();
+
+      const payload = {
+        guestName: reservation.guestName,
+        date: reservation.date,
+        themeId,
+        timeId
+      };
+      const paymentReservation = {
+        reservationId: reservation.id,
+        amount: theme.price ?? DEFAULT_THEME_PRICE,
+        orderName: theme.name
+      };
+
+      state.selectedThemeId = themeId;
+      state.selectedTimeId = timeId;
+      state.selectedSlotAvailability = { availability: SLOT_WAITING };
+      elements.nameInput.value = reservation.guestName || "";
+      elements.dateInput.value = reservation.date;
+
+      await openPaymentPanel(payload, paymentReservation, theme, time);
+      setLookupMessage("결제수단을 선택한 뒤 결제를 진행해주세요.", "ok");
+      elements.paymentPanel?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
     function renderLookupReservations(reservations) {
       state.lookupReservations = reservations;
       elements.lookupList.innerHTML = "";
@@ -1295,6 +1341,7 @@ const API_BASE = "";
           const status = reservationStatus(reservation);
           const waitNumber = reservation.waitNumber;
           const disabledActions = status === "CANCELED";
+          const canPay = status === "PENDING";
           const row = document.createElement("div");
           row.className = `list-row reservation-row ${status.toLowerCase()}`;
           row.innerHTML = `
@@ -1306,6 +1353,7 @@ const API_BASE = "";
               <span class="list-meta">${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(theme?.name || "-")} · ${escapeHtml(normalizeTime(time?.startAt || "-"))}</span>
             </div>
             <div class="row-actions">
+              ${canPay ? `<button class="primary-button compact-button" type="button" data-pay-reservation-id="${reservation.id}">결제하기</button>` : ""}
               ${disabledActions ? "" : `<button class="secondary-button compact-button" type="button" data-edit-reservation-id="${reservation.id}">수정</button>`}
               ${disabledActions ? "" : `<button class="danger-button compact-button" type="button" data-cancel-reservation-id="${reservation.id}">취소</button>`}
             </div>
@@ -2028,6 +2076,12 @@ const API_BASE = "";
       elements.paymentButton.addEventListener("click", submitPayment);
       elements.lookupForm.addEventListener("submit", lookupReservations);
       elements.lookupList.addEventListener("click", (event) => {
+        const payButton = event.target.closest("[data-pay-reservation-id]");
+        if (payButton) {
+          startPaymentReservation(Number(payButton.dataset.payReservationId));
+          return;
+        }
+
         const editButton = event.target.closest("[data-edit-reservation-id]");
         if (editButton) {
           startEditReservation(Number(editButton.dataset.editReservationId));
