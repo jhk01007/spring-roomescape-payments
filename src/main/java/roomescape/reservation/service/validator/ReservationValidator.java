@@ -21,7 +21,12 @@ public class ReservationValidator {
     private final Clock clock;
 
     public void validateCreate(Reservation created) {
-        validateNotDuplicated(created);
+        validateNotDuplicatedSlotAndGuest(created);
+        validateNotPast(created);
+    }
+
+    public void validateCreatePending(Reservation created) {
+        validateNotDuplicatedSlot(created);
         validateNotPast(created);
     }
 
@@ -34,7 +39,7 @@ public class ReservationValidator {
 
     public void validateEdit(Reservation changed) {
         validateNotPast(changed);
-        validateNotDuplicated(changed);
+        validateNotDuplicatedSlotAndGuest(changed);
     }
 
     public void validateCancel(Reservation canceled) {
@@ -48,12 +53,22 @@ public class ReservationValidator {
         validateAlreadyStarted(canceled);
     }
 
-    private void validateNotDuplicated(Reservation reservation) {
+    private void validateNotDuplicatedSlotAndGuest(Reservation reservation) {
         if (reservationRepository.existsBySlotAndGuestNameExceptCanceled(
                 reservation.getDate(),
                 reservation.getTimeId(),
                 reservation.getThemeId(),
                 reservation.getGuestName()
+        )) {
+            throw new DomainException(RESERVATION_ALREADY_EXISTS);
+        }
+    }
+
+    private void validateNotDuplicatedSlot(Reservation reservation) {
+        if (reservationRepository.existsBySlot(
+                reservation.getDate(),
+                reservation.getTimeId(),
+                reservation.getThemeId()
         )) {
             throw new DomainException(RESERVATION_ALREADY_EXISTS);
         }

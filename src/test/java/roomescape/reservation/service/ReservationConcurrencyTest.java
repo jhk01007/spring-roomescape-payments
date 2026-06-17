@@ -205,6 +205,11 @@ class ReservationConcurrencyTest {
             return delegate.existByThemeId(themeId);
         }
 
+        @Override
+        public boolean existsBySlot(LocalDate date, Long timeId, Long themeId) {
+            return delegate.existsBySlot(date, timeId, themeId);
+        }
+
         private void awaitConcurrentCreate() {
             try {
                 concurrentCreateBarrier.await(3, TimeUnit.SECONDS);

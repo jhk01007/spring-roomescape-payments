@@ -250,6 +250,11 @@ public class ReservationRepositoryImpl implements ReservationRepository {
         return count > 0;
     }
 
+    @Override
+    public boolean existsBySlot(LocalDate date, Long timeId, Long themeId) {
+        return jpaReservationRepository.existsByDateAndTimeIdAndThemeId(date, timeId, themeId, Status.CANCELED);
+    }
+
     private Query findWaitingRows(String sql) {
         return entityManager.createNativeQuery(sql);
     }

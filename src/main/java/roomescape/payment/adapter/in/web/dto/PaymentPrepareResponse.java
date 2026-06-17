@@ -1,0 +1,13 @@
+package roomescape.payment.adapter.in.web.dto;
+
+import roomescape.payment.application.port.in.PaymentPrepareResult;
+
+public record PaymentPrepareResponse(
+        String orderId,
+        Long reservationId
+) {
+
+    public static PaymentPrepareResponse from(PaymentPrepareResult result) {
+        return new PaymentPrepareResponse(result.orderId(), result.reservationId());
+    }
+}

@@ -30,4 +30,6 @@ public interface ReservationRepository {
     boolean existByTimeId(Long timeId);
 
     boolean existByThemeId(Long themeId);
+
+    boolean existsBySlot(LocalDate date, Long timeId, Long themeId);
 }
