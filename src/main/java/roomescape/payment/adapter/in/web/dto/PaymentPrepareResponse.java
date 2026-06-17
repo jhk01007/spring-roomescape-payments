@@ -4,10 +4,17 @@ import roomescape.payment.application.port.in.PaymentPrepareResult;
 
 public record PaymentPrepareResponse(
         String orderId,
-        Long reservationId
+        Long reservationId,
+        Long amount,
+        String orderName
 ) {
 
     public static PaymentPrepareResponse from(PaymentPrepareResult result) {
-        return new PaymentPrepareResponse(result.orderId(), result.reservationId());
+        return new PaymentPrepareResponse(
+                result.orderId(),
+                result.reservationId(),
+                result.amount(),
+                result.orderName()
+        );
     }
 }

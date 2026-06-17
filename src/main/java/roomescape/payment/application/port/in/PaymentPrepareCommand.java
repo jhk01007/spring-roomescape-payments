@@ -6,7 +6,6 @@ public record PaymentPrepareCommand(
         String guestName,
         LocalDate date,
         Long timeId,
-        Long themeId,
-        Long amount
+        Long themeId
 ) {
 }

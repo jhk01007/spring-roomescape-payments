@@ -20,7 +20,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_AMOUNT_MISMATCH_WITH_THEME;
 import static roomescape.reservation.domain.Status.PENDING;
 import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.RESERVATION_TIME_NOT_FOUND;
 import static roomescape.theme.exception.ThemeErrorCode.THEME_NOT_FOUND;
@@ -41,7 +40,8 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
     public PaymentPrepareResult prepare(PaymentPrepareCommand command) {
         ReservationTime time = getReservationTime(command.timeId());
         Theme theme = getTheme(command.themeId());
-        validatePrice(command.amount(), theme);
+        Long amount = theme.getPrice();
+        String orderName = theme.getName();
 
         Reservation reservation = Reservation.create(
                 command.guestName(),
@@ -55,9 +55,9 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
 
         Reservation saved = reservationRepository.save(reservation);
         String orderId = createOrderId();
-        paymentSessionRepository.save(orderId, saved.getId(), command.amount());
+        paymentSessionRepository.save(orderId, saved.getId(), amount);
 
-        return new PaymentPrepareResult(orderId, saved.getId());
+        return new PaymentPrepareResult(orderId, saved.getId(), amount, orderName);
     }
 
     private ReservationTime getReservationTime(Long timeId) {
@@ -68,12 +68,6 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
     private Theme getTheme(Long themeId) {
         return themeRepository.findById(themeId)
                 .orElseThrow(() -> new DomainException(THEME_NOT_FOUND));
-    }
-
-    private void validatePrice(Long requestedAmount, Theme theme) {
-        if (!theme.isSamePrice(requestedAmount)) {
-            throw new DomainException(PAYMENT_AMOUNT_MISMATCH_WITH_THEME);
-        }
     }
 
     private String createOrderId() {
