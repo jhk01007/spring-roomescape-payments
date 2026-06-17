@@ -18,6 +18,7 @@ public sealed interface ReservationWaitingResponse permits ConfirmedReservationR
         return switch (reservationWaitingResult.status()) {
             case CONFIRMED -> ConfirmedReservationResponse.from(reservationWaitingResult);
             case WAITING -> WaitingReservationResponse.from(reservationWaitingResult);
+            case PENDING -> WaitingReservationResponse.from(reservationWaitingResult);
             case CANCELED -> CanceledReservationResponse.from(reservationWaitingResult);
         };
     }

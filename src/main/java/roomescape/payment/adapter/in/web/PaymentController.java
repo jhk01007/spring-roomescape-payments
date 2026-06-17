@@ -1,4 +1,4 @@
-package roomescape.page;
+package roomescape.payment.adapter.in.web;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -7,18 +7,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.UUID;
-
 @Controller
 @RequestMapping("/payments")
-public class PaymentPageController {
+public class PaymentController {
 
     private static final String DEFAULT_ORDER_NAME = "방탈출 예약";
     private static final long DEFAULT_AMOUNT = 50_000L;
 
     private final String clientKey;
 
-    public PaymentPageController(@Value("${toss.client-key:}") String clientKey) {
+    public PaymentController(@Value("${toss.client-key:}") String clientKey) {
         this.clientKey = clientKey;
     }
 
