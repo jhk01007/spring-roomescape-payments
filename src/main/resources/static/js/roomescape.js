@@ -942,8 +942,9 @@ const API_BASE = "";
 
       elements.paymentButton.disabled = true;
       setPaymentMessage("결제 정보를 저장하고 있습니다.");
+      let prepared = null;
       try {
-        const prepared = await postJson("/payments/prepare", { reservationId: draft.reservationId });
+        prepared = await postJson("/payments/prepare", { reservationId: draft.reservationId });
         await state.paymentWidgets.setAmount({ currency: "KRW", value: Number(prepared.amount) });
 
         await state.paymentWidgets.requestPayment({
@@ -954,8 +955,22 @@ const API_BASE = "";
           failUrl: window.location.origin + "/?payment=fail"
         });
       } catch (error) {
+        let failureCanceled = false;
+        if (prepared?.orderId) {
+          try {
+            await postJson("/payments/failures", { orderId: prepared.orderId });
+            failureCanceled = true;
+          } catch (failureError) {
+            setPaymentMessage(endpointMessageOr(failureError, "결제 실패 후 예약 취소 처리에 실패했습니다."), "error");
+            elements.paymentButton.disabled = false;
+            return;
+          }
+        }
         if (error.code === "USER_CANCEL") {
-          setPaymentMessage("결제가 취소되었습니다. 결제수단을 다시 선택할 수 있습니다.");
+          setPaymentMessage(
+            failureCanceled ? "결제가 취소되어 예약도 취소되었습니다." : "결제가 취소되었습니다.",
+            "error"
+          );
         } else {
           setPaymentMessage(endpointMessageOr(error, "결제 요청에 실패했습니다."), "error");
         }
@@ -1070,8 +1085,17 @@ const API_BASE = "";
       const paymentStatus = params.get("payment");
       if (paymentStatus === "fail") {
         const message = params.get("message") || "결제가 완료되지 않았습니다.";
-        showErrorPopup(message, "결제에 실패했습니다");
-        cleanPaymentRedirectParams(params);
+        const orderId = params.get("orderId");
+        try {
+          if (orderId) {
+            await postJson("/payments/failures", { orderId });
+          }
+          showErrorPopup(`${message}\n예약은 취소 처리되었습니다.`, "결제에 실패했습니다");
+        } catch (error) {
+          showErrorPopup(endpointMessageOr(error, "결제 실패 후 예약 취소 처리에 실패했습니다."), "예약 취소를 확인해주세요");
+        } finally {
+          cleanPaymentRedirectParams(params);
+        }
         return;
       }
       if (paymentStatus !== "success") {

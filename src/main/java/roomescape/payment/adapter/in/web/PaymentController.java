@@ -9,13 +9,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.payment.adapter.in.web.dto.PaymentConfirmRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentConfirmResponse;
+import roomescape.payment.adapter.in.web.dto.PaymentFailureRequest;
+import roomescape.payment.adapter.in.web.dto.PaymentFailureResponse;
 import roomescape.payment.adapter.in.web.dto.PaymentPrepareRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentPrepareResponse;
 import roomescape.payment.adapter.in.web.dto.PaymentReservationRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentReservationResponse;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
+import roomescape.payment.application.port.in.PaymentFailureUseCase;
 import roomescape.payment.application.port.in.PaymentPrepareUseCase;
 import roomescape.payment.application.port.in.PaymentReservationUseCase;
+import roomescape.payment.application.port.in.dto.PaymentFailureResult;
 import roomescape.payment.domain.PaymentResult;
 
 import static org.springframework.http.HttpStatus.CREATED;
@@ -27,6 +31,7 @@ public class PaymentController {
     private final PaymentPrepareUseCase paymentPrepareUseCase;
     private final PaymentReservationUseCase paymentReservationUseCase;
     private final PaymentConfirmUseCase paymentConfirmUseCase;
+    private final PaymentFailureUseCase paymentFailureUseCase;
 
     @PostMapping("/reservations")
     public ResponseEntity<PaymentReservationResponse> createReservation(
@@ -53,5 +58,13 @@ public class PaymentController {
                 request.amount()
         );
         return ResponseEntity.ok(PaymentConfirmResponse.from(paymentResult));
+    }
+
+    @PostMapping("/failures")
+    public ResponseEntity<PaymentFailureResponse> fail(
+            @RequestBody @Valid PaymentFailureRequest request
+    ) {
+        PaymentFailureResult result = paymentFailureUseCase.fail(request.orderId());
+        return ResponseEntity.ok(PaymentFailureResponse.from(result));
     }
 }

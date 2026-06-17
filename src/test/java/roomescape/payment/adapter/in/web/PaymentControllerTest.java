@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import roomescape.payment.adapter.in.web.dto.PaymentConfirmRequest;
+import roomescape.payment.adapter.in.web.dto.PaymentFailureRequest;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
+import roomescape.payment.application.port.in.PaymentFailureUseCase;
+import roomescape.payment.application.port.in.dto.PaymentFailureResult;
 import roomescape.payment.domain.PaymentResult;
 import roomescape.test_config.integration.controller.ControllerTest;
 import roomescape.test_config.integration.controller.MockedBean;
@@ -20,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static roomescape.payment.domain.PaymentStatus.DONE;
+import static roomescape.reservation.domain.Status.CANCELED;
 
 @ControllerTest
 class PaymentControllerTest {
@@ -32,6 +36,9 @@ class PaymentControllerTest {
 
     @MockedBean
     private PaymentConfirmUseCase paymentConfirmUseCase;
+
+    @MockedBean
+    private PaymentFailureUseCase paymentFailureUseCase;
 
     @Test
     @DisplayName("결제 승인 요청을 처리한다.")
@@ -61,5 +68,27 @@ class PaymentControllerTest {
         then(paymentConfirmUseCase)
                 .should()
                 .confirm("payment-key", "order-id", 40_000L);
+    }
+
+    @Test
+    @DisplayName("결제 실패 요청을 처리한다.")
+    void fail_success() throws Exception {
+        // given
+        PaymentFailureRequest request = new PaymentFailureRequest("order-id");
+        given(paymentFailureUseCase.fail("order-id"))
+                .willReturn(new PaymentFailureResult("order-id", 1L, CANCELED));
+
+        // when, then
+        mockMvc.perform(post("/payments/failures")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value("order-id"))
+                .andExpect(jsonPath("$.reservationId").value(1L))
+                .andExpect(jsonPath("$.reservationStatus").value("CANCELED"));
+
+        then(paymentFailureUseCase)
+                .should()
+                .fail("order-id");
     }
 }
