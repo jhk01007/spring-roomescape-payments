@@ -29,6 +29,7 @@ CREATE TABLE reservation
     cancel_token     BIGINT       NOT NULL DEFAULT 0,
     status           VARCHAR(50)  NOT NULL,
     last_modified_at TIMESTAMP    NOT NULL,
+    payment_expires_at TIMESTAMP,
 
     PRIMARY KEY (id),
     UNIQUE (guest_name, date, time_id, theme_id, cancel_token),

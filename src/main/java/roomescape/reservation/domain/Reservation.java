@@ -60,11 +60,27 @@ public class Reservation {
     @Column(name = "last_modified_at", nullable = false)
     private LocalDateTime lastModifiedAt;
 
+    @Column(name = "payment_expires_at")
+    private LocalDateTime paymentExpiresAt;
+
     protected Reservation() {
     }
 
     private Reservation(
             Long id, String guestName, LocalDate date, ReservationTime time, Theme theme, Status status, LocalDateTime lastModifiedAt) {
+        this(id, guestName, date, time, theme, status, lastModifiedAt, null);
+    }
+
+    private Reservation(
+            Long id,
+            String guestName,
+            LocalDate date,
+            ReservationTime time,
+            Theme theme,
+            Status status,
+            LocalDateTime lastModifiedAt,
+            LocalDateTime paymentExpiresAt
+    ) {
         validateReservation(guestName, date, time, theme, lastModifiedAt);
         this.id = id;
         this.guestName = guestName;
@@ -74,11 +90,24 @@ public class Reservation {
         this.status = status;
         this.cancelToken = 0L;
         this.lastModifiedAt = lastModifiedAt;
+        this.paymentExpiresAt = paymentExpiresAtFor(status, paymentExpiresAt);
     }
 
     public static Reservation create(
             String guestName, LocalDate date, ReservationTime time, Theme theme, Status status, LocalDateTime lastModifiedAt) {
         return new Reservation(null, guestName, date, time, theme, status, lastModifiedAt);
+    }
+
+    public static Reservation create(
+            String guestName,
+            LocalDate date,
+            ReservationTime time,
+            Theme theme,
+            Status status,
+            LocalDateTime lastModifiedAt,
+            LocalDateTime paymentExpiresAt
+    ) {
+        return new Reservation(null, guestName, date, time, theme, status, lastModifiedAt, paymentExpiresAt);
     }
 
     public static Reservation of(
@@ -93,6 +122,19 @@ public class Reservation {
         return new Reservation(id, guestName, date, time, theme, status, lastModifiedAt);
     }
 
+    public static Reservation of(
+            long id,
+            String guestName,
+            LocalDate date,
+            ReservationTime time,
+            Theme theme,
+            Status status,
+            LocalDateTime lastModifiedAt,
+            LocalDateTime paymentExpiresAt
+    ) {
+        return new Reservation(id, guestName, date, time, theme, status, lastModifiedAt, paymentExpiresAt);
+    }
+
     public static Reservation clone(Reservation reservation) {
         return new Reservation(
                 reservation.id,
@@ -101,12 +143,13 @@ public class Reservation {
                 reservation.time,
                 reservation.theme,
                 reservation.status,
-                reservation.lastModifiedAt);
+                reservation.lastModifiedAt,
+                reservation.paymentExpiresAt);
     }
 
     public Reservation withId(long id) {
         require(this.id == null, new DomainException(RESERVATION_ALREADY_HAS_ID));
-        return of(id, guestName, date, time, theme, status, lastModifiedAt);
+        return of(id, guestName, date, time, theme, status, lastModifiedAt, paymentExpiresAt);
     }
 
     private void validateReservation(String guestName, LocalDate date, ReservationTime time, Theme theme, LocalDateTime lastModifiedAt) {
@@ -115,6 +158,13 @@ public class Reservation {
         requireNonNull(time, new DomainException(INVALID_RESERVATION_TIME));
         requireNonNull(theme, new DomainException(INVALID_THEME));
         requireNonNull(lastModifiedAt, new DomainException(INVALID_LAST_MODIFIED_AT));
+    }
+
+    private LocalDateTime paymentExpiresAtFor(Status status, LocalDateTime paymentExpiresAt) {
+        if (PENDING.equals(status)) {
+            return paymentExpiresAt;
+        }
+        return null;
     }
 
     public Long getThemeId() {
@@ -148,11 +198,11 @@ public class Reservation {
 
     public Reservation changeDateTimeAndStatus(
             LocalDate changedDate, ReservationTime changedTime, Status status, LocalDateTime lastModifiedAt) {
-        return new Reservation(id, guestName, changedDate, changedTime, theme, status, lastModifiedAt);
+        return new Reservation(id, guestName, changedDate, changedTime, theme, status, lastModifiedAt, paymentExpiresAt);
     }
 
     public Reservation changeStatus(Status status) {
-        return new Reservation(id, guestName, date, time, theme, status, lastModifiedAt);
+        return new Reservation(id, guestName, date, time, theme, status, lastModifiedAt, paymentExpiresAt);
     }
 
     public void updateDateTimeAndStatus(
@@ -162,19 +212,31 @@ public class Reservation {
         this.time = changedTime;
         this.status = status;
         this.lastModifiedAt = lastModifiedAt;
+        this.paymentExpiresAt = paymentExpiresAtFor(status, paymentExpiresAt);
     }
 
     public void updateStatus(Status status) {
         this.status = status;
+        this.paymentExpiresAt = paymentExpiresAtFor(status, paymentExpiresAt);
+    }
+
+    public void waitForPayment(LocalDateTime lastModifiedAt, LocalDateTime paymentExpiresAt) {
+        requireNonNull(lastModifiedAt, new DomainException(INVALID_LAST_MODIFIED_AT));
+        requireNonNull(paymentExpiresAt, new DomainException(INVALID_PAYMENT_EXPIRES_AT));
+        this.status = PENDING;
+        this.lastModifiedAt = lastModifiedAt;
+        this.paymentExpiresAt = paymentExpiresAt;
     }
 
     public void confirm() {
         this.status = CONFIRMED;
+        this.paymentExpiresAt = null;
     }
 
     public void cancel() {
         this.status = CANCELED;
         this.cancelToken = id;
+        this.paymentExpiresAt = null;
     }
 
     public boolean isConfirmed() {
@@ -187,6 +249,10 @@ public class Reservation {
 
     public boolean isCanceled() {
         return CANCELED.equals(status);
+    }
+
+    public boolean isPaymentExpired(LocalDateTime now) {
+        return isPending() && paymentExpiresAt != null && !paymentExpiresAt.isAfter(now);
     }
 
     public boolean isSameDateTime(LocalDate date, Long timeId) {

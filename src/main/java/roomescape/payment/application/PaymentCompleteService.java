@@ -14,6 +14,9 @@ import roomescape.payment.domain.exception.PaymentAmountMismatchException;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_CONFIRMATION_NOT_DONE;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_EXPIRED;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_RESERVATION_NOT_PENDING;
@@ -27,6 +30,14 @@ public class PaymentCompleteService {
     private final PaymentRepository paymentRepository;
     private final PaymentSessionRepository paymentSessionRepository;
     private final ReservationRepository reservationRepository;
+    private final Clock clock;
+
+    @Transactional
+    public void validateCompletable(Long reservationId) {
+        Reservation reservation = getReservation(reservationId);
+        validateNotExpired(reservation);
+        validatePendingStatus(reservation);
+    }
 
     @Transactional
     public void complete(PaymentResult paymentResult) {
@@ -38,15 +49,9 @@ public class PaymentCompleteService {
             throw new PaymentAmountMismatchException(paymentSession.amount(), paymentResult.approvedAmount());
         }
 
-        Reservation reservation = reservationRepository.findById(paymentSession.reservationId())
-                .orElseThrow(() -> new DomainException(RESERVATION_NOT_FOUND));
+        Reservation reservation = getReservation(paymentSession.reservationId());
 
-        if (reservation.isCanceled()) {
-            throw new DomainException(PAYMENT_EXPIRED);
-        }
-        if (!reservation.isPending()) {
-            throw new DomainException(PAYMENT_RESERVATION_NOT_PENDING);
-        }
+        validatePendingStatus(reservation);
 
         Payment payment = Payment.approve(
                 reservation.getId(),
@@ -59,6 +64,30 @@ public class PaymentCompleteService {
 
         paymentRepository.save(payment);
         reservation.confirm();
+    }
+
+    private Reservation getReservation(Long reservationId) {
+        return reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new DomainException(RESERVATION_NOT_FOUND));
+    }
+
+    private void validateNotExpired(Reservation reservation) {
+        if (reservation.isCanceled()) {
+            throw new DomainException(PAYMENT_EXPIRED);
+        }
+        if (reservation.isPaymentExpired(LocalDateTime.now(clock))) {
+            reservation.cancel();
+            throw new DomainException(PAYMENT_EXPIRED);
+        }
+    }
+
+    private void validatePendingStatus(Reservation reservation) {
+        if (reservation.isCanceled()) {
+            throw new DomainException(PAYMENT_EXPIRED);
+        }
+        if (!reservation.isPending()) {
+            throw new DomainException(PAYMENT_RESERVATION_NOT_PENDING);
+        }
     }
 
     private void validateApproved(PaymentResult paymentResult) {

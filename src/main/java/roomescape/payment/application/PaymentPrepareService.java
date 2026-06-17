@@ -12,6 +12,8 @@ import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.theme.domain.Theme;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_EXPIRED;
@@ -24,6 +26,7 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
 
     private final ReservationRepository reservationRepository;
     private final PaymentSessionRepository paymentSessionRepository;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -48,6 +51,10 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
 
     private void validatePending(Reservation reservation) {
         if (reservation.isCanceled()) {
+            throw new DomainException(PAYMENT_EXPIRED);
+        }
+        if (reservation.isPaymentExpired(LocalDateTime.now(clock))) {
+            reservation.cancel();
             throw new DomainException(PAYMENT_EXPIRED);
         }
         if (!reservation.isPending()) {

@@ -40,15 +40,15 @@ class PendingPaymentReservationExpirationServiceTest {
     EntityManager entityManager;
 
     @Test
-    @DisplayName("마지막 수정 시각이 10분 이상 지난 결제 대기 예약을 취소한다.")
+    @DisplayName("결제 만료 시각이 지난 결제 대기 예약을 취소한다.")
     void expire_success() {
         // given
         LocalDateTime now = LocalDateTime.of(2025, 5, 1, 12, 0);
         clock.setFixed(now);
 
-        Reservation expiredPending = insertReservation("브라운", LocalTime.of(10, 0), PENDING, now.minusMinutes(10));
-        Reservation recentPending = insertReservation("포비", LocalTime.of(12, 0), PENDING, now.minusMinutes(9));
-        Reservation oldConfirmed = insertReservation("호눅스", LocalTime.of(14, 0), CONFIRMED, now.minusMinutes(20));
+        Reservation expiredPending = insertReservation("브라운", LocalTime.of(10, 0), PENDING, now.minusHours(2), now);
+        Reservation recentPending = insertReservation("포비", LocalTime.of(12, 0), PENDING, now.minusHours(2), now.plusMinutes(1));
+        Reservation oldConfirmed = insertReservation("호눅스", LocalTime.of(14, 0), CONFIRMED, now.minusHours(2), now.minusHours(1));
 
         // when
         int expiredCount = expirationService.expire();
@@ -67,7 +67,8 @@ class PendingPaymentReservationExpirationServiceTest {
             String guestName,
             LocalTime startAt,
             roomescape.reservation.domain.Status status,
-            LocalDateTime lastModifiedAt
+            LocalDateTime lastModifiedAt,
+            LocalDateTime paymentExpiresAt
     ) {
         ReservationTime time = fixtureGenerator.insertReservationTime(startAt);
         Theme theme = fixtureGenerator.insertTheme(
@@ -82,7 +83,8 @@ class PendingPaymentReservationExpirationServiceTest {
                 time,
                 theme,
                 status,
-                lastModifiedAt
+                lastModifiedAt,
+                paymentExpiresAt
         );
     }
 }

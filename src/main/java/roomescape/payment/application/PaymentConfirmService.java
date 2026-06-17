@@ -30,6 +30,8 @@ public class PaymentConfirmService implements PaymentConfirmUseCase {
         if (!paymentSession.isSameAmount(amount)) {
             throw new PaymentAmountMismatchException(paymentSession.amount(), amount);
         }
+        paymentCompleteService.validateCompletable(paymentSession.reservationId());
+
         PaymentConfirmation confirmation = new PaymentConfirmation(paymentKey, orderId, amount);
         PaymentResult paymentResult = paymentGateway.confirm(confirmation);
         paymentCompleteService.complete(paymentResult);

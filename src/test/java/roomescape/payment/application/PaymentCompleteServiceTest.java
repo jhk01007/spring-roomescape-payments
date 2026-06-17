@@ -1,6 +1,7 @@
 package roomescape.payment.application;
 
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import roomescape.payment.domain.PaymentResult;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservationtime.domain.ReservationTime;
+import roomescape.test_config.clock.MutableClock;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
 import roomescape.test_config.integration.db.service.ServiceTest;
 import roomescape.theme.domain.Theme;
@@ -51,7 +53,15 @@ class PaymentCompleteServiceTest {
     SQLFixtureGenerator fixtureGenerator;
 
     @Autowired
+    MutableClock clock;
+
+    @Autowired
     EntityManager entityManager;
+
+    @BeforeEach
+    void resetClock() {
+        clock.reset();
+    }
 
     @Test
     @DisplayName("승인이 완료된 결제 정보를 저장하고 예약을 확정한다.")
@@ -108,7 +118,40 @@ class PaymentCompleteServiceTest {
                 .hasMessage(PAYMENT_EXPIRED.message());
     }
 
+    @Test
+    @DisplayName("결제 만료 시각이 지난 예약은 결제 승인 전에 예약을 취소하고 만료된 결제 예외가 발생한다.")
+    void validateCompletable_fail_expiredPendingReservation() {
+        // given
+        LocalDateTime now = LocalDateTime.of(2025, 5, 1, 12, 0);
+        clock.setFixed(now);
+
+        Reservation reservation = insertReservation(PENDING, now.minusMinutes(11), now.minusMinutes(1));
+
+        // when, then
+        assertThatThrownBy(() -> paymentCompleteService.validateCompletable(reservation.getId()))
+                .isInstanceOf(DomainException.class)
+                .hasMessage(PAYMENT_EXPIRED.message());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(reservationRepository.findById(reservation.getId()).get().getStatus()).isEqualTo(CANCELED);
+    }
+
     private Reservation insertReservation(roomescape.reservation.domain.Status status) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime paymentExpiresAt = null;
+        if (PENDING.equals(status)) {
+            paymentExpiresAt = now.plusMinutes(10);
+        }
+        return insertReservation(status, now, paymentExpiresAt);
+    }
+
+    private Reservation insertReservation(
+            roomescape.reservation.domain.Status status,
+            LocalDateTime lastModifiedAt,
+            LocalDateTime paymentExpiresAt
+    ) {
         ReservationTime time = fixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
         Theme theme = fixtureGenerator.insertTheme(
                 "레벨2 탈출",
@@ -116,7 +159,15 @@ class PaymentCompleteServiceTest {
                 "https://example.com/theme.png",
                 AMOUNT
         );
-        return fixtureGenerator.insertReservation("브라운", LocalDate.of(2025, 5, 2), time, theme, status);
+        return fixtureGenerator.insertReservation(
+                "브라운",
+                LocalDate.of(2025, 5, 2),
+                time,
+                theme,
+                status,
+                lastModifiedAt,
+                paymentExpiresAt
+        );
     }
 
     private PaymentResult paymentResult(String paymentKey, String orderId, Long amount) {

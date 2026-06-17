@@ -9,6 +9,7 @@ public enum ReservationErrorCode implements ErrorPolicy {
     INVALID_RESERVATION_GUEST_NAME("예약자 이름은 비어 있을 수 없습니다.", BAD_REQUEST),
     INVALID_RESERVATION_DATE("예약 날짜는 비어 있을 수 없습니다.", BAD_REQUEST),
     INVALID_LAST_MODIFIED_AT("예약이 마지막으로 생성/수정 반영된 시각은 비어있을 수 없습니다.", INTERNAL_SERVER_ERROR),
+    INVALID_PAYMENT_EXPIRES_AT("결제 만료 시각은 비어 있을 수 없습니다.", INTERNAL_SERVER_ERROR),
     INVALID_STATUS("잘못된 형식의 예약 상태값입니다.", INTERNAL_SERVER_ERROR),
     RESERVATION_ALREADY_HAS_ID("이미 식별자가 존재하는 예약입니다.", CONFLICT),
     RESERVATION_ALREADY_EXISTS("이미 존재하는 예약입니다.", CONFLICT),

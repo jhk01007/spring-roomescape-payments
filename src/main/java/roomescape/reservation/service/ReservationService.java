@@ -17,6 +17,7 @@ import roomescape.reservation.domain.ReservationRepository;
 import roomescape.theme.domain.ThemeRepository;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +35,8 @@ import static roomescape.theme.exception.ThemeErrorCode.*;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReservationService {
+    private static final Duration PROMOTED_PAYMENT_EXPIRATION = Duration.ofHours(1);
+
     private final ReservationRepository reservationRepository;
     private final ReservationTimeRepository reservationTimeRepository;
     private final ThemeRepository themeRepository;
@@ -115,11 +118,26 @@ public class ReservationService {
         }
     }
 
+    private void updateTopWaitingPending(Reservation reservation) {
+        if (reservation.isConfirmed()) {
+            Optional<Reservation> topWaiting = reservationRepository.findBySlotAndStatusWaitingAndWaitingNumberIsOne(
+                    reservation.getDate(),
+                    reservation.getTimeId(),
+                    reservation.getThemeId());
+
+            if (topWaiting.isPresent()) {
+                Reservation top = topWaiting.get();
+                LocalDateTime now = LocalDateTime.now(clock);
+                top.waitForPayment(now, now.plus(PROMOTED_PAYMENT_EXPIRATION));
+            }
+        }
+    }
+
     @Transactional
     public void cancel(Long id) {
         Reservation reservation = getReservation(id);
         reservationValidator.validateCancel(reservation);
-        updateTopWaitingConfirmed(reservation);
+        updateTopWaitingPending(reservation);
         reservation.cancel();
     }
 
@@ -127,7 +145,7 @@ public class ReservationService {
     public void cancelMine(Long id, String guestName) {
         Reservation reservation = getReservation(id);
         reservationValidator.validateCancelMine(reservation, guestName);
-        updateTopWaitingConfirmed(reservation);
+        updateTopWaitingPending(reservation);
         reservation.cancel();
     }
 

@@ -33,6 +33,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 r.date,
                 r.status AS status,
                 r.last_modified_at AS last_modified_at,
+                r.payment_expires_at AS payment_expires_at,
                 t.id AS time_id,
                 t.start_at,
                 t.deleted_at AS time_deleted_at,
@@ -103,10 +104,10 @@ public class ReservationRepositoryImpl implements ReservationRepository {
     }
 
     @Override
-    public List<Reservation> findAllPendingLastModifiedAtBeforeOrEqual(LocalDateTime lastModifiedAt) {
-        return jpaReservationRepository.findAllByStatusAndLastModifiedAtLessThanEqual(
+    public List<Reservation> findAllPendingPaymentExpiresAtBeforeOrEqual(LocalDateTime paymentExpiresAt) {
+        return jpaReservationRepository.findAllByStatusAndPaymentExpiresAtLessThanEqual(
                 Status.PENDING,
-                lastModifiedAt
+                paymentExpiresAt
         );
     }
 
@@ -160,7 +161,8 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 time,
                 theme,
                 reservation.getStatus(),
-                reservation.getLastModifiedAt()
+                reservation.getLastModifiedAt(),
+                reservation.getPaymentExpiresAt()
         );
 
         return jpaReservationRepository.save(attachedReservation);
@@ -248,23 +250,23 @@ public class ReservationRepositoryImpl implements ReservationRepository {
 
     private ReservationWaitingDto toReservationWaitingDto(Object row) {
         Object[] columns = (Object[]) row;
-        return ReservationWaitingDto.from(toReservation(columns), toLong(columns[14]));
+        return ReservationWaitingDto.from(toReservation(columns), toLong(columns[15]));
     }
 
     private Reservation toReservation(Object row) {
         Object[] columns = (Object[]) row;
         ReservationTime time = ReservationTime.of(
-                toLong(columns[5]),
-                toLocalTime(columns[6]),
-                toLocalDateTime(columns[7])
+                toLong(columns[6]),
+                toLocalTime(columns[7]),
+                toLocalDateTime(columns[8])
         );
         Theme theme = Theme.of(
-                toLong(columns[8]),
-                (String) columns[9],
+                toLong(columns[9]),
                 (String) columns[10],
                 (String) columns[11],
-                toLong(columns[12]),
-                toLocalDateTime(columns[13])
+                (String) columns[12],
+                toLong(columns[13]),
+                toLocalDateTime(columns[14])
         );
         return Reservation.of(
                 toLong(columns[0]),
@@ -273,7 +275,8 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 time,
                 theme,
                 toStatus(columns[3]),
-                toLocalDateTime(columns[4])
+                toLocalDateTime(columns[4]),
+                toLocalDateTime(columns[5])
         );
     }
 

@@ -7,7 +7,6 @@ import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,17 +14,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PendingPaymentReservationExpirationService {
 
-    private static final Duration EXPIRATION_THRESHOLD = Duration.ofMinutes(10);
-
     private final ReservationRepository reservationRepository;
     private final Clock clock;
 
     @Transactional
     public int expire() {
-        LocalDateTime lastModifiedAtThreshold = LocalDateTime.now(clock)
-                .minus(EXPIRATION_THRESHOLD);
+        LocalDateTime now = LocalDateTime.now(clock);
         List<Reservation> expiredReservations =
-                reservationRepository.findAllPendingLastModifiedAtBeforeOrEqual(lastModifiedAtThreshold);
+                reservationRepository.findAllPendingPaymentExpiresAtBeforeOrEqual(now);
 
         expiredReservations.forEach(Reservation::cancel);
         return expiredReservations.size();

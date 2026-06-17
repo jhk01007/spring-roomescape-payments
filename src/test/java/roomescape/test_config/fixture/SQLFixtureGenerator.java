@@ -37,9 +37,34 @@ public class SQLFixtureGenerator {
             Status status,
             LocalDateTime lastModifiedAt
     ) {
+        LocalDateTime paymentExpiresAt = null;
+        if (Status.PENDING.equals(status)) {
+            paymentExpiresAt = lastModifiedAt.plusMinutes(10);
+        }
+
+        return insertReservation(guestName, date, time, theme, status, lastModifiedAt, paymentExpiresAt);
+    }
+
+    public Reservation insertReservation(
+            String guestName,
+            LocalDate date,
+            ReservationTime time,
+            Theme theme,
+            Status status,
+            LocalDateTime lastModifiedAt,
+            LocalDateTime paymentExpiresAt
+    ) {
         ReservationTime attachedTime = entityManager.getReference(ReservationTime.class, time.getId());
         Theme attachedTheme = entityManager.getReference(Theme.class, theme.getId());
-        Reservation reservation = Reservation.create(guestName, date, attachedTime, attachedTheme, status, lastModifiedAt);
+        Reservation reservation = Reservation.create(
+                guestName,
+                date,
+                attachedTime,
+                attachedTheme,
+                status,
+                lastModifiedAt,
+                paymentExpiresAt
+        );
         entityManager.persist(reservation);
         if (Status.CANCELED.equals(status)) {
             flush();

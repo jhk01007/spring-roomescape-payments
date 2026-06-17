@@ -16,7 +16,7 @@ public interface ReservationRepository {
 
     PageResult<Reservation> findAllByStatusCanceledNot(int page, int size);
 
-    List<Reservation> findAllPendingLastModifiedAtBeforeOrEqual(LocalDateTime lastModifiedAt);
+    List<Reservation> findAllPendingPaymentExpiresAtBeforeOrEqual(LocalDateTime paymentExpiresAt);
 
     List<ReservationWaitingDto> findWaitingAllByGuestName(String guestName);
 

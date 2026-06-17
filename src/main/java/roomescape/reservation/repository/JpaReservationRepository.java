@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface JpaReservationRepository extends JpaRepository<Reservation, Long> {
 
-    List<Reservation> findAllByStatusAndLastModifiedAtLessThanEqual(Status status, LocalDateTime lastModifiedAt);
+    List<Reservation> findAllByStatusAndPaymentExpiresAtLessThanEqual(Status status, LocalDateTime paymentExpiresAt);
 
     @Query("""
             SELECT COUNT(reservation) > 0

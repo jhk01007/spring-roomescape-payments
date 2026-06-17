@@ -16,6 +16,7 @@ import roomescape.theme.domain.Theme;
 import roomescape.theme.domain.ThemeRepository;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import static roomescape.reservation.domain.Status.PENDING;
@@ -25,6 +26,8 @@ import static roomescape.theme.exception.ThemeErrorCode.THEME_NOT_FOUND;
 @Service
 @RequiredArgsConstructor
 public class PaymentReservationService implements PaymentReservationUseCase {
+
+    private static final Duration PAYMENT_EXPIRATION = Duration.ofMinutes(10);
 
     private final ReservationRepository reservationRepository;
     private final ReservationTimeRepository reservationTimeRepository;
@@ -38,13 +41,15 @@ public class PaymentReservationService implements PaymentReservationUseCase {
         ReservationTime time = getReservationTime(command.timeId());
         Theme theme = getTheme(command.themeId());
 
+        LocalDateTime now = LocalDateTime.now(clock);
         Reservation reservation = Reservation.create(
                 command.guestName(),
                 command.date(),
                 time,
                 theme,
                 PENDING,
-                LocalDateTime.now(clock)
+                now,
+                now.plus(PAYMENT_EXPIRATION)
         );
         reservationValidator.validateCreatePending(reservation);
 

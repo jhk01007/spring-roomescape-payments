@@ -165,8 +165,8 @@ class ReservationConcurrencyTest {
         }
 
         @Override
-        public List<Reservation> findAllPendingLastModifiedAtBeforeOrEqual(LocalDateTime lastModifiedAt) {
-            return delegate.findAllPendingLastModifiedAtBeforeOrEqual(lastModifiedAt);
+        public List<Reservation> findAllPendingPaymentExpiresAtBeforeOrEqual(LocalDateTime paymentExpiresAt) {
+            return delegate.findAllPendingPaymentExpiresAtBeforeOrEqual(paymentExpiresAt);
         }
 
         @Override

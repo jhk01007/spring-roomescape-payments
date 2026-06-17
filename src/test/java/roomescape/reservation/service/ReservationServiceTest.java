@@ -218,10 +218,11 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("예약을 취소할 때 확정된 상태의 예약을 취소하면 기존 대기 중인 예약 중 가장 우선순위 높은 예약이 확정 상태로 변한다. ")
+    @DisplayName("예약을 취소할 때 확정된 상태의 예약을 취소하면 기존 대기 중인 예약 중 가장 우선순위 높은 예약이 결제 대기 상태로 변한다.")
     public void cancel_success_promoteWaiting() {
         // given
-        clock.setFixed(LocalDate.of(2023, 7, 6));
+        LocalDateTime now = LocalDateTime.of(2023, 7, 6, 12, 0);
+        clock.setFixed(now);
 
         Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
         ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
@@ -236,7 +237,9 @@ class ReservationServiceTest {
 
         // then
         Reservation updatedWaiting = reservationRepository.findById(waiting1.getId()).get();
-        assertThat(updatedWaiting.getStatus()).isEqualTo(CONFIRMED);
+        assertThat(updatedWaiting.getStatus()).isEqualTo(PENDING);
+        assertThat(updatedWaiting.getLastModifiedAt()).isEqualTo(now);
+        assertThat(updatedWaiting.getPaymentExpiresAt()).isEqualTo(now.plusHours(1));
     }
 
     @Test
@@ -301,10 +304,11 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("본인의 예약을 취소할 때 확정된 상태의 예약을 취소하면 기존 대기 중인 예약 중 가장 우선순위 높은 예약이 확정 상태로 변한다.")
+    @DisplayName("본인의 예약을 취소할 때 확정된 상태의 예약을 취소하면 기존 대기 중인 예약 중 가장 우선순위 높은 예약이 결제 대기 상태로 변한다.")
     public void cancelMine_success_promoteWaiting() {
         // given
-        clock.setFixed(LocalDate.of(2023, 7, 6));
+        LocalDateTime now = LocalDateTime.of(2023, 7, 6, 12, 0);
+        clock.setFixed(now);
         Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
         ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
         LocalDate date = LocalDate.of(2023, 8, 10);
@@ -318,7 +322,9 @@ class ReservationServiceTest {
 
         // then
         Reservation updatedWaiting = reservationRepository.findById(waiting1.getId()).get();
-        assertThat(updatedWaiting.getStatus()).isEqualTo(CONFIRMED);
+        assertThat(updatedWaiting.getStatus()).isEqualTo(PENDING);
+        assertThat(updatedWaiting.getLastModifiedAt()).isEqualTo(now);
+        assertThat(updatedWaiting.getPaymentExpiresAt()).isEqualTo(now.plusHours(1));
     }
 
 
