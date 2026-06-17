@@ -89,7 +89,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestSupport {
     }
 
     @Test
-    @DisplayName("예약 수정 시 이미 확정 예약이 있는 시간으로 변경하면 대기가 된다")
+    @DisplayName("결제 대기 예약 수정 시 이미 점유된 시간으로 변경하면 실패한다")
     public void scenario4_2() {
         mutableClock.setFixed(현재_날짜);
         // given
@@ -105,17 +105,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestSupport {
         ExtractableResponse<Response> response = 예약_날짜와_시간_수정을_요청하면(myReservation, editRequest);
 
         // then
-        예약_수정이_성공한다(response, myReservation);
-        내_예약_목록에서_예약_상태를_응답받는다(
-                내_예약_목록_조회를_요청하면(myReservation.guestName()),
-                myReservation,
-                "WAITING"
-        );
-        내_예약_목록에서_대기_순번을_응답받는다(
-                내_예약_목록_조회를_요청하면(myReservation.guestName()),
-                myReservation,
-                1
-        );
+        예약_수정_실패_응답을_받는다(response, 409);
     }
 
     @Test
@@ -217,7 +207,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestSupport {
     }
 
     @Test
-    @DisplayName("빈 시간대 예약은 확정된다")
+    @DisplayName("결제 예약 생성 시 예약은 결제 대기 상태가 된다")
     public void scenario9() {
         mutableClock.setFixed(현재_날짜);
 
@@ -225,24 +215,24 @@ public class ReservationAcceptanceTest extends AcceptanceTestSupport {
         ReservationInfo reservation = 예약_생성을_요청하고("brown", 예약일, LocalTime.of(10, 30));
 
         // then
-        예약_상태가_확정으로_응답받는다(reservation);
+        예약_상태가_결제_대기로_응답받는다(reservation);
     }
 
     @Test
-    @DisplayName("이미 확정 예약이 있는 시간대의 예약은 대기가 된다")
+    @DisplayName("이미 결제 대기 예약이 있는 시간대의 예약은 대기가 된다")
     public void scenario10() {
         mutableClock.setFixed(현재_날짜);
 
         // given
         Integer themeId = 테마_생성을_요청하고(new ThemeCreateRequest("테마1", "설명", "섬네일"));
         Integer reservationTimeId = 예약_시간_생성을_요청하고(new ReservationTimeCreateRequest(LocalTime.of(10, 30)));
-        ReservationInfo confirmedReservation = 예약_생성을_요청하고("brown", 예약일, reservationTimeId, themeId);
+        ReservationInfo pendingReservation = 예약_생성을_요청하고("brown", 예약일, reservationTimeId, themeId);
 
         // when
-        ReservationInfo waitingReservation = 예약_생성을_요청하고("pobi", 예약일, reservationTimeId, themeId);
+        ReservationInfo waitingReservation = 예약_대기_생성을_요청하고("pobi", 예약일, reservationTimeId, themeId);
 
         // then
-        예약_상태가_확정으로_응답받는다(confirmedReservation);
+        예약_상태가_결제_대기로_응답받는다(pendingReservation);
         예약_상태와_대기_순번을_응답받는다(waitingReservation, 1);
         내_예약_목록에서_대기_순번을_응답받는다(
                 내_예약_목록_조회를_요청하면(waitingReservation.guestName()),
@@ -262,8 +252,8 @@ public class ReservationAcceptanceTest extends AcceptanceTestSupport {
         예약_생성을_요청하고("brown", 예약일, reservationTimeId, themeId);
 
         // when
-        ReservationInfo firstWaiting = 예약_생성을_요청하고("pobi", 예약일, reservationTimeId, themeId);
-        ReservationInfo secondWaiting = 예약_생성을_요청하고("jason", 예약일, reservationTimeId, themeId);
+        ReservationInfo firstWaiting = 예약_대기_생성을_요청하고("pobi", 예약일, reservationTimeId, themeId);
+        ReservationInfo secondWaiting = 예약_대기_생성을_요청하고("jason", 예약일, reservationTimeId, themeId);
 
         // then
         예약_상태와_대기_순번을_응답받는다(firstWaiting, 1);
@@ -271,25 +261,25 @@ public class ReservationAcceptanceTest extends AcceptanceTestSupport {
     }
 
     @Test
-    @DisplayName("확정 예약을 취소하면 첫 번째 대기 예약이 확정된다")
+    @DisplayName("결제 대기 예약을 취소하면 첫 번째 대기 예약은 대기 상태를 유지한다")
     public void scenario12() {
         mutableClock.setFixed(현재_날짜);
 
         // given
         Integer themeId = 테마_생성을_요청하고(new ThemeCreateRequest("테마1", "설명", "섬네일"));
         Integer reservationTimeId = 예약_시간_생성을_요청하고(new ReservationTimeCreateRequest(LocalTime.of(10, 30)));
-        ReservationInfo confirmedReservation = 예약_생성을_요청하고("brown", 예약일, reservationTimeId, themeId);
-        ReservationInfo waitingReservation = 예약_생성을_요청하고("pobi", 예약일, reservationTimeId, themeId);
+        ReservationInfo pendingReservation = 예약_생성을_요청하고("brown", 예약일, reservationTimeId, themeId);
+        ReservationInfo waitingReservation = 예약_대기_생성을_요청하고("pobi", 예약일, reservationTimeId, themeId);
 
         // when
-        ExtractableResponse<Response> cancelResponse = 내_예약_취소를_요청하면(confirmedReservation);
+        ExtractableResponse<Response> cancelResponse = 내_예약_취소를_요청하면(pendingReservation);
 
         // then
         내_예약_취소가_성공한다(cancelResponse);
         내_예약_목록에서_예약_상태를_응답받는다(
                 내_예약_목록_조회를_요청하면(waitingReservation.guestName()),
                 waitingReservation,
-                "CONFIRMED"
+                "WAITING"
         );
     }
 }

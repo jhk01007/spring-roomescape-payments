@@ -450,17 +450,17 @@ class ReservationRepositoryTest {
     }
 
     @Test
-    @DisplayName("예약 조회에서 날짜, 시간, 테마가 같고 Confiremd인 것만 조회한다.")
-    public void existsBySlotAndStatusConfirmed() {
+    @DisplayName("예약 조회에서 날짜, 시간, 테마가 같고 Confirmed 또는 Pending인 예약이 있는지 조회한다.")
+    public void existsBySlotAndStatusConfirmedOrPending() {
         // given
         ReservationTime time = sqlFixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
         Theme theme = sqlFixtureGenerator.insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
-        sqlFixtureGenerator.insertReservation("브라운", LocalDate.of(2023, 8, 5), time, theme, CONFIRMED);
+        sqlFixtureGenerator.insertReservation("브라운", LocalDate.of(2023, 8, 5), time, theme, PENDING);
         sqlFixtureGenerator.insertReservation("주디", LocalDate.of(2023, 8, 5), time, theme, WAITING);
-        Reservation reservation = sqlFixtureGenerator.insertReservation("초코칩", LocalDate.of(2023, 8, 5), time, theme, WAITING);
 
         // when
-        boolean result = reservationRepository.existsBySlotAndStatusConfirmed(reservation.getDate(), time.getId(), theme.getId());
+        boolean result = reservationRepository.existsBySlotAndStatusConfirmedOrPending(
+                LocalDate.of(2023, 8, 5), time.getId(), theme.getId());
 
         // then
         assertThat(result).isTrue();

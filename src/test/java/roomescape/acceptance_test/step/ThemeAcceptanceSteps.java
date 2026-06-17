@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import roomescape.reservation.controller.dto.ReservationCreateRequest;
+import roomescape.payment.adapter.in.web.dto.PaymentReservationRequest;
 import roomescape.reservationtime.controller.dto.ReservationTimeCreateRequest;
 import roomescape.theme.controller.dto.ThemeCreateRequest;
 
@@ -161,20 +161,16 @@ public final class ThemeAcceptanceSteps {
             Integer reservationTimeId,
             Integer themeId
     ) {
-        ReservationCreateRequest request = new ReservationCreateRequest(
+        PaymentReservationRequest request = new PaymentReservationRequest(
                 name,
                 date,
                 reservationTimeId.longValue(),
                 themeId.longValue());
 
-        ExtractableResponse<Response> response = post(OBJECT_MAPPER, "/reservations", request);
+        ExtractableResponse<Response> response = post(OBJECT_MAPPER, "/payments/reservations", request);
 
         assertThat(response.statusCode()).isEqualTo(201);
-        assertThat(response.jsonPath().getString("guestName")).isEqualTo(request.guestName());
-        assertThat(response.jsonPath().getString("date")).isEqualTo(request.date().toString());
-        assertThat(response.jsonPath().getInt("time.id")).isEqualTo(reservationTimeId);
-        assertThat(response.jsonPath().getInt("theme.id")).isEqualTo(themeId);
-        return response.path("id");
+        return response.path("reservationId");
     }
 
     public record PopularThemeIds(

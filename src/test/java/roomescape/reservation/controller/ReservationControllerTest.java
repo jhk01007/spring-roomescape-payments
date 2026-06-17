@@ -57,15 +57,15 @@ class ReservationControllerTest {
     private ReservationService reservationService;
 
     @Test
-    @DisplayName("예약을 생성하는 요청을 하면 생성된 예약 정보가 응답으로 반환된다.")
-    public void create_success_response() throws Exception {
+    @DisplayName("대기 예약을 생성하는 요청을 하면 생성된 대기 예약 정보가 응답으로 반환된다.")
+    public void createWaiting_success_response() throws Exception {
         // given
         ReservationTime time = ReservationTime.of(1L, LocalTime.of(10, 0));
         Theme theme = Theme.of(1L, "레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme-1.png");
         ReservationWaitingResult reservationWaitingResult =
-                new ReservationWaitingResult(1L, "브라운", LocalDate.of(2023, 8, 5), time, theme, Status.CONFIRMED, 0);
+                new ReservationWaitingResult(1L, "브라운", LocalDate.of(2023, 8, 5), time, theme, Status.WAITING, 1);
 
-        given(reservationService.create(anyString(), any(), anyLong(), anyLong()))
+        given(reservationService.createWaiting(anyString(), any(), anyLong(), anyLong()))
                 .willReturn(reservationWaitingResult);
 
         ReservationCreateRequest request = new ReservationCreateRequest(
@@ -77,39 +77,41 @@ class ReservationControllerTest {
 
         // when then
         MvcResult result = mockMvc.perform(
-                        post("/reservations")
+                        post("/reservations/waiting")
                                 .content(objectMapper.writeValueAsString(request))
                                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        ConfirmedReservationResponse reservationWaitingResponse = objectMapper.readValue(
+        WaitingReservationResponse reservationWaitingResponse = objectMapper.readValue(
                 result.getResponse().getContentAsString(),
-                ConfirmedReservationResponse.class
+                WaitingReservationResponse.class
         );
 
-        assertNonWaitingReservation(reservationWaitingResponse, reservationWaitingResult);
+        assertWaitingReservation(reservationWaitingResponse, reservationWaitingResult);
         assertTime(reservationWaitingResponse.time(), time);
         assertTheme(reservationWaitingResponse.theme(), theme);
 
         then(reservationService)
                 .should()
-                .create(request.guestName(), request.date(), request.timeId(), request.themeId());
+                .createWaiting(request.guestName(), request.date(), request.timeId(), request.themeId());
     }
 
-    private static void assertNonWaitingReservation(ReservationWaitingResponse reservationWaitingResponse, ReservationWaitingResult reservationWaitingResult) {
-        assertThat(reservationWaitingResponse).isInstanceOf(ConfirmedReservationResponse.class);
-        assertThat((ConfirmedReservationResponse) reservationWaitingResponse).extracting(
+    private static void assertWaitingReservation(ReservationWaitingResponse reservationWaitingResponse, ReservationWaitingResult reservationWaitingResult) {
+        assertThat(reservationWaitingResponse).isInstanceOf(WaitingReservationResponse.class);
+        assertThat((WaitingReservationResponse) reservationWaitingResponse).extracting(
                 ReservationWaitingResponse::id,
                 ReservationWaitingResponse::guestName,
                 ReservationWaitingResponse::date,
-                ReservationWaitingResponse::status
+                ReservationWaitingResponse::status,
+                WaitingReservationResponse::waitNumber
         ).containsExactly(
                 reservationWaitingResult.id(),
                 reservationWaitingResult.guestName(),
                 reservationWaitingResult.date().toString(),
-                reservationWaitingResult.status().toString()
+                reservationWaitingResult.status().toString(),
+                reservationWaitingResult.waitNumber()
         );
     }
 
@@ -136,15 +138,15 @@ class ReservationControllerTest {
             "브라운,2023-08-05,,1",
             "브라운,2023-08-05,1,",
     })
-    @DisplayName("예약을 생성하는 요청을 할 때 특정 요청값이 비어있으면 에러가 발생한다.")
-    public void create_fail_emptyField(String guestName, String date, Long timeId, Long themeId) throws Exception {
+    @DisplayName("대기 예약을 생성하는 요청을 할 때 특정 요청값이 비어있으면 에러가 발생한다.")
+    public void createWaiting_fail_emptyField(String guestName, String date, Long timeId, Long themeId) throws Exception {
         // given
         LocalDate reservationDate = date == null ? null : LocalDate.parse(date);
         ReservationCreateRequest request = new ReservationCreateRequest(guestName, reservationDate, timeId, themeId);
 
         // when then
         mockMvc.perform(
-                        post("/reservations")
+                        post("/reservations/waiting")
                                 .content(objectMapper.writeValueAsString(request))
                                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -153,8 +155,8 @@ class ReservationControllerTest {
     }
 
     @Test
-    @DisplayName("예약을 생성하는 요청을 할 때 날짜 형식이 올바르지 않으면 에러가 발생한다.")
-    public void create_fail_invalidDateFormat() throws Exception {
+    @DisplayName("대기 예약을 생성하는 요청을 할 때 날짜 형식이 올바르지 않으면 에러가 발생한다.")
+    public void createWaiting_fail_invalidDateFormat() throws Exception {
         // given
         String request = """
                 {
@@ -167,7 +169,7 @@ class ReservationControllerTest {
 
         // when then
         mockMvc.perform(
-                        post("/reservations")
+                        post("/reservations/waiting")
                                 .content(request)
                                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())

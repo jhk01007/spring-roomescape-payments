@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
+import roomescape.reservation.domain.Status;
 import roomescape.reservation.repository.ReservationRepositoryImpl;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
@@ -58,24 +59,25 @@ class ReservationConcurrencyTest {
     private MutableClock clock;
 
     @Test
-    @DisplayName("동시에 같은 날짜, 시간, 테마로 예약하면 확정 예약은 하나만 생성되어야 한다.")
-    void create_concurrently_sameSlot_onlyOneConfirmed() throws Exception {
+    @DisplayName("동시에 같은 날짜, 시간, 테마로 대기 예약하면 모두 대기 예약으로 생성된다.")
+    void createWaiting_concurrently_sameOccupiedSlot_allWaiting() throws Exception {
         // given
         clock.setFixed(LocalDate.of(2025, 5, 10));
 
         ReservationTime time = sqlFixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
         Theme theme = sqlFixtureGenerator.insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
         LocalDate date = LocalDate.of(2025, 5, 11);
+        sqlFixtureGenerator.insertReservation("제이미", date, time, theme, Status.CONFIRMED);
 
         // when
         executeConcurrently(
-                () -> reservationService.create("브라운", date, time.getId(), theme.getId()),
-                () -> reservationService.create("포비", date, time.getId(), theme.getId())
+                () -> reservationService.createWaiting("브라운", date, time.getId(), theme.getId()),
+                () -> reservationService.createWaiting("포비", date, time.getId(), theme.getId())
         );
 
         // then
-        long confirmedCount = countConfirmedReservations(date, time.getId(), theme.getId());
-//        assertThat(confirmedCount).isEqualTo(1);
+        long waitingCount = countWaitingReservations(date, time.getId(), theme.getId());
+        assertThat(waitingCount).isEqualTo(2);
     }
 
     private void executeConcurrently(Runnable first, Runnable second) throws Exception {
@@ -109,14 +111,14 @@ class ReservationConcurrencyTest {
         }
     }
 
-    private long countConfirmedReservations(LocalDate date, Long timeId, Long themeId) {
+    private long countWaitingReservations(LocalDate date, Long timeId, Long themeId) {
         Long count = jdbcTemplate.queryForObject("""
                         SELECT COUNT(*)
                         FROM reservation
                         WHERE date = :date
                           AND time_id = :timeId
                           AND theme_id = :themeId
-                          AND status = 'CONFIRMED'
+                          AND status = 'WAITING'
                         """,
                 new MapSqlParameterSource()
                         .addValue("date", Date.valueOf(date))
@@ -184,15 +186,10 @@ class ReservationConcurrencyTest {
         }
 
         @Override
-        public boolean existsBySlotAndStatusConfirmed(LocalDate date, Long timeId, Long themeId) {
-            boolean exists = delegate.existsBySlotAndStatusConfirmed(date, timeId, themeId);
+        public boolean existsBySlotAndStatusConfirmedOrPending(LocalDate date, Long timeId, Long themeId) {
+            boolean exists = delegate.existsBySlotAndStatusConfirmedOrPending(date, timeId, themeId);
             awaitConcurrentCreate();
             return exists;
-        }
-
-        @Override
-        public boolean existsBySlotExceptReservation(LocalDate date, Long timeId, Long themeId, Long excludedId) {
-            return delegate.existsBySlotExceptReservation(date, timeId, themeId, excludedId);
         }
 
         @Override

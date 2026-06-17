@@ -181,40 +181,19 @@ public class ReservationRepositoryImpl implements ReservationRepository {
     }
 
     @Override
-    public boolean existsBySlotAndStatusConfirmed(LocalDate date, Long timeId, Long themeId) {
+    public boolean existsBySlotAndStatusConfirmedOrPending(LocalDate date, Long timeId, Long themeId) {
         Long count = entityManager.createQuery("""
                         SELECT COUNT(reservation)
                         FROM Reservation reservation
                         WHERE reservation.date = :date
                           AND reservation.time.id = :timeId
                           AND reservation.theme.id = :themeId
-                          AND reservation.status = :status
+                          AND reservation.status IN :statuses
                         """, Long.class)
                 .setParameter("date", date)
                 .setParameter("timeId", timeId)
                 .setParameter("themeId", themeId)
-                .setParameter("status", Status.CONFIRMED)
-                .getSingleResult();
-
-        return count > 0;
-    }
-
-    @Override
-    public boolean existsBySlotExceptReservation(LocalDate date, Long timeId, Long themeId, Long excludedId) {
-        Long count = entityManager.createQuery("""
-                        SELECT COUNT(reservation)
-                        FROM Reservation reservation
-                        WHERE reservation.date = :date
-                          AND reservation.time.id = :timeId
-                          AND reservation.theme.id = :themeId
-                          AND reservation.status = :status
-                          AND reservation.id != :excludedId
-                        """, Long.class)
-                .setParameter("date", date)
-                .setParameter("timeId", timeId)
-                .setParameter("themeId", themeId)
-                .setParameter("status", Status.CONFIRMED)
-                .setParameter("excludedId", excludedId)
+                .setParameter("statuses", List.of(Status.CONFIRMED, Status.PENDING))
                 .getSingleResult();
 
         return count > 0;

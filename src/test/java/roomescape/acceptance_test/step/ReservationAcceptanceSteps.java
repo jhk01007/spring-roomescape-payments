@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import roomescape.payment.adapter.in.web.dto.PaymentReservationRequest;
 import roomescape.reservation.controller.dto.ReservationCreateRequest;
 import roomescape.reservation.controller.dto.ReservationEditRequest;
 import roomescape.reservationtime.controller.dto.ReservationTimeCreateRequest;
@@ -88,7 +89,44 @@ public final class ReservationAcceptanceSteps {
     public static ReservationInfo 예약_생성을_요청하고(
             ReservationCreateRequest request
     ) {
-        ExtractableResponse<Response> response = post(OBJECT_MAPPER, "/reservations", request);
+        PaymentReservationRequest paymentReservationRequest = new PaymentReservationRequest(
+                request.guestName(),
+                request.date(),
+                request.timeId(),
+                request.themeId()
+        );
+        ExtractableResponse<Response> response = post(OBJECT_MAPPER, "/payments/reservations", paymentReservationRequest);
+        Integer reservationId = response.path("reservationId");
+
+        assertThat(response.statusCode()).isEqualTo(201);
+        assertThat(reservationId).isNotNull();
+
+        return new ReservationInfo(
+                reservationId,
+                request,
+                "PENDING",
+                null
+        );
+    }
+
+    public static ReservationInfo 예약_대기_생성을_요청하고(
+            String guestName,
+            LocalDate date,
+            Integer reservationTimeId,
+            Integer themeId
+    ) {
+        return 예약_대기_생성을_요청하고(new ReservationCreateRequest(
+                guestName,
+                date,
+                reservationTimeId.longValue(),
+                themeId.longValue()
+        ));
+    }
+
+    public static ReservationInfo 예약_대기_생성을_요청하고(
+            ReservationCreateRequest request
+    ) {
+        ExtractableResponse<Response> response = post(OBJECT_MAPPER, "/reservations/waiting", request);
         Integer reservationId = response.path("id");
 
         assertThat(response.statusCode()).isEqualTo(201);
@@ -173,6 +211,10 @@ public final class ReservationAcceptanceSteps {
 
     public static void 예약_상태가_확정으로_응답받는다(ReservationInfo reservation) {
         assertThat(reservation.status()).isEqualTo("CONFIRMED");
+    }
+
+    public static void 예약_상태가_결제_대기로_응답받는다(ReservationInfo reservation) {
+        assertThat(reservation.status()).isEqualTo("PENDING");
     }
 
     public static void 예약_상태와_대기_순번을_응답받는다(ReservationInfo reservation, int waitNumber) {

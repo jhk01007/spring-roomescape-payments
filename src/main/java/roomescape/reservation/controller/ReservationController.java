@@ -9,8 +9,6 @@ import roomescape.reservation.controller.dto.*;
 import roomescape.reservation.service.ReservationService;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 
-
-
 import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
@@ -19,9 +17,9 @@ import static org.springframework.http.HttpStatus.CREATED;
 public class ReservationController {
     private final ReservationService reservationService;
 
-    @PostMapping
-    public ResponseEntity<ReservationWaitingResponse> create(@RequestBody @Valid ReservationCreateRequest request) {
-        ReservationWaitingResult reservationWaitingResult = reservationService.create(
+    @PostMapping("/waiting")
+    public ResponseEntity<ReservationWaitingResponse> createWaiting(@RequestBody @Valid ReservationCreateRequest request) {
+        ReservationWaitingResult reservationWaitingResult = reservationService.createWaiting(
                 request.guestName(),
                 request.date(),
                 request.timeId(),

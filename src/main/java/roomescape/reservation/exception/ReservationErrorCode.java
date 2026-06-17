@@ -12,6 +12,7 @@ public enum ReservationErrorCode implements ErrorPolicy {
     INVALID_STATUS("잘못된 형식의 예약 상태값입니다.", INTERNAL_SERVER_ERROR),
     RESERVATION_ALREADY_HAS_ID("이미 식별자가 존재하는 예약입니다.", CONFLICT),
     RESERVATION_ALREADY_EXISTS("이미 존재하는 예약입니다.", CONFLICT),
+    RESERVATION_WAITING_REQUIRES_OCCUPIED_SLOT("확정 또는 결제 대기 예약이 있는 슬롯만 대기 예약을 할 수 있습니다.", CONFLICT),
     RESERVATION_NOT_FOUND("존재하지 않는 예약입니다.", NOT_FOUND),
     PAST_RESERVATION_NOT_ALLOWED("이미 지난 시간에는 예약할 수 없습니다.", UNPROCESSABLE_ENTITY),
     CANNOT_EDIT_SAME_DATE_TIME("기존 날짜,시간으로는 수정할 수 없습니다.", BAD_REQUEST),

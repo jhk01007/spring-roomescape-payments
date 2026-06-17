@@ -410,6 +410,9 @@ const API_BASE = "";
       if (status === "WAITING") {
         return "대기";
       }
+      if (status === "PENDING") {
+        return "결제 대기";
+      }
       if (status === "CANCELED") {
         return "취소";
       }
@@ -603,6 +606,17 @@ const API_BASE = "";
       };
     }
 
+    function createPendingReservation(payload, paymentReservation) {
+      return {
+        id: paymentReservation.reservationId,
+        guestName: payload.guestName,
+        date: payload.date,
+        themeId: payload.themeId,
+        timeId: payload.timeId,
+        status: "PENDING"
+      };
+    }
+
     async function reserve() {
       const theme = selectedTheme();
       const time = selectedTime();
@@ -622,7 +636,8 @@ const API_BASE = "";
       try {
         let createdReservation = null;
         if (state.mode === "live") {
-          createdReservation = await postJson("/reservations", payload);
+          const paymentReservation = await postJson("/payments/reservations", payload);
+          createdReservation = createPendingReservation(payload, paymentReservation);
         } else {
           createdReservation = createDemoReservation(payload);
           state.demoReservations = [...state.demoReservations, createdReservation];
@@ -631,9 +646,14 @@ const API_BASE = "";
 
         const createdStatus = reservationStatus(createdReservation);
         const isWaiting = createdStatus === "WAITING";
+        const isPending = createdStatus === "PENDING";
         const waitNumber = createdReservation.waitNumber;
         showToast(
-          isWaiting ? `${name}님의 대기 신청이 완료되었습니다.` : `${name}님의 예약이 완료되었습니다.`,
+          isWaiting
+            ? `${name}님의 대기 신청이 완료되었습니다.`
+            : isPending
+              ? `${name}님의 결제 대기 예약이 생성되었습니다.`
+              : `${name}님의 예약이 완료되었습니다.`,
           `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}${isWaiting && waitNumber ? ` · 대기 ${waitNumber}번` : ""}`
         );
         elements.nameInput.value = "";
@@ -641,7 +661,9 @@ const API_BASE = "";
         renderTimes();
         setFormMessage(isWaiting
           ? `대기 신청이 완료되었습니다.${waitNumber ? ` 현재 대기 ${waitNumber}번입니다.` : ""}`
-          : "예약이 완료되었습니다.", "ok");
+          : isPending
+            ? "결제 대기 예약이 생성되었습니다."
+            : "예약이 완료되었습니다.", "ok");
       } catch (error) {
         setFormMessage(endpointMessageOr(error, "예약 요청에 실패했습니다."), "error");
       }
@@ -1385,15 +1407,16 @@ const API_BASE = "";
       try {
         let createdReservation = null;
         if (state.mode === "live") {
-          createdReservation = await postJson("/reservations", payload);
+          const paymentReservation = await postJson("/payments/reservations", payload);
+          createdReservation = createPendingReservation(payload, paymentReservation);
         } else {
           createdReservation = createDemoReservation(payload);
           state.demoReservations = [...state.demoReservations, createdReservation];
         }
         elements.adminReserveName.value = "";
         state.adminSelectedTimeId = null;
-        setAdminReserveMessage("예약이 추가되었습니다.", "ok");
-        showToast("관리자 예약이 추가되었습니다.", `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}`);
+        setAdminReserveMessage("결제 대기 예약이 추가되었습니다.", "ok");
+        showToast("관리자 결제 대기 예약이 추가되었습니다.", `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}`);
         await syncAfterAdminChange();
       } catch (error) {
         setAdminReserveMessage(endpointMessageOr(error, "예약 추가에 실패했습니다."), "error");
