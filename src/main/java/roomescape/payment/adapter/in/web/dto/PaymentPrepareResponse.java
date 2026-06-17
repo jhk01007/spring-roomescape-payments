@@ -1,6 +1,6 @@
 package roomescape.payment.adapter.in.web.dto;
 
-import roomescape.payment.application.port.in.PaymentPrepareResult;
+import roomescape.payment.application.port.in.dto.PaymentPrepareResult;
 
 public record PaymentPrepareResponse(
         String orderId,

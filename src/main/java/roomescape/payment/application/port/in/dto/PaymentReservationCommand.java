@@ -1,8 +1,8 @@
-package roomescape.payment.application.port.in;
+package roomescape.payment.application.port.in.dto;
 
 import java.time.LocalDate;
 
-public record PaymentPrepareCommand(
+public record PaymentReservationCommand(
         String guestName,
         LocalDate date,
         Long timeId,

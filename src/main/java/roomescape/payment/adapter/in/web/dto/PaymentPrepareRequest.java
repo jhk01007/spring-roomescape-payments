@@ -1,23 +1,14 @@
 package roomescape.payment.adapter.in.web.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import roomescape.payment.application.port.in.PaymentPrepareCommand;
-
-import java.time.LocalDate;
+import roomescape.payment.application.port.in.dto.PaymentPrepareCommand;
 
 public record PaymentPrepareRequest(
-        @NotBlank(message = "예약자 이름은 비어 있을 수 없습니다.")
-        String guestName,
-        @NotNull(message = "예약 날짜는 비어 있을 수 없습니다.")
-        LocalDate date,
-        @NotNull(message = "예약 시간은 비어 있을 수 없습니다.")
-        Long timeId,
-        @NotNull(message = "테마는 비어 있을 수 없습니다.")
-        Long themeId
+        @NotNull(message = "예약 id는 비어 있을 수 없습니다.")
+        Long reservationId
 ) {
 
     public PaymentPrepareCommand toCommand() {
-        return new PaymentPrepareCommand(guestName, date, timeId, themeId);
+        return new PaymentPrepareCommand(reservationId);
     }
 }

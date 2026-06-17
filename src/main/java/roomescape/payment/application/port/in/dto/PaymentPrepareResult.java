@@ -1,4 +1,4 @@
-package roomescape.payment.application.port.in;
+package roomescape.payment.application.port.in.dto;
 
 public record PaymentPrepareResult(
         String orderId,
