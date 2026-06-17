@@ -168,6 +168,10 @@ public class Reservation {
         this.status = status;
     }
 
+    public void confirm() {
+        this.status = CONFIRMED;
+    }
+
     public void cancel() {
         this.status = CANCELED;
         this.cancelToken = id;

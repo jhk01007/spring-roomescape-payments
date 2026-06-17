@@ -13,6 +13,9 @@ import roomescape.payment.domain.PaymentConfirmation;
 import roomescape.payment.domain.PaymentResult;
 import roomescape.payment.domain.PaymentStatus;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
 /**
  * PaymentGateway 포트의 Toss 구현(어댑터). Toss 의 요청·응답·에러 포맷은 이 클래스 밖으로 새어 나가지 않는다(부패 방지 계층).
  */
@@ -52,8 +55,17 @@ public class TossPaymentGateway implements PaymentGateway {
                 tossPaymentResponse.paymentKey(),
                 tossPaymentResponse.orderId(),
                 PaymentStatus.from(tossPaymentResponse.status()),
-                tossPaymentResponse.totalAmount()
+                tossPaymentResponse.totalAmount(),
+                toLocalDateTime(tossPaymentResponse.approvedAt()),
+                toLocalDateTime(tossPaymentResponse.requestedAt())
         );
+    }
+
+    private static LocalDateTime toLocalDateTime(OffsetDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+        return dateTime.toLocalDateTime();
     }
 
 }

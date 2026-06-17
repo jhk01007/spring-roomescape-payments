@@ -1051,6 +1051,24 @@ const API_BASE = "";
       }, 3600);
     }
 
+    function showPaymentRedirectMessage() {
+      if (!isUserPage() || !window.location.search) {
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("payment") !== "success") {
+        return;
+      }
+
+      showToast("예약이 완료되었습니다.", "결제가 승인되어 예약이 확정되었습니다.");
+      params.delete("payment");
+
+      const query = params.toString();
+      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
+    }
+
     function getNextId(items) {
       return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
     }
@@ -2048,4 +2066,4 @@ const API_BASE = "";
       });
     }
 
-    loadInitialData();
+    loadInitialData().then(showPaymentRedirectMessage);

@@ -1,4 +1,4 @@
-package roomescape.payment.adapter.out.persistence;
+package roomescape.payment.adapter.out.persistence.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -63,5 +63,9 @@ public class PaymentSession {
     @Override
     public int hashCode() {
         return Objects.hashCode(orderId);
+    }
+
+    public boolean isSameAmount(long amount) {
+        return Objects.equals(this.amount, amount);
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class PageController {
 
-    private static final String ASSET_VERSION = "payment-flow-1";
+    private static final String ASSET_VERSION = "payment-flow-2";
 
     private final String tossClientKey;
 

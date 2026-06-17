@@ -1,4 +1,4 @@
-package roomescape.payment.adapter.out.persistence;
+package roomescape.payment.adapter.out.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

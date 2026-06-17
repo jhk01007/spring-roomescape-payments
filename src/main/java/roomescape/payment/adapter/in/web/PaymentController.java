@@ -1,30 +1,22 @@
 package roomescape.payment.adapter.in.web;
 
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import roomescape.common.exception.DomainException;
+import roomescape.payment.adapter.out.client.TossPaymentException;
+import roomescape.payment.application.port.in.PaymentConfirmUseCase;
+import roomescape.payment.domain.exception.PaymentAmountMismatchException;
 
 @Controller
 @RequestMapping("/payments")
+@RequiredArgsConstructor
 public class PaymentController {
 
-    private static final String DEFAULT_ORDER_NAME = "방탈출 예약";
-    private static final long DEFAULT_AMOUNT = 50_000L;
-
-    private final String clientKey;
-
-    public PaymentController(@Value("${toss.client-key:}") String clientKey) {
-        this.clientKey = clientKey;
-    }
-
-    @GetMapping({"", "/"})
-    public String checkout(Model model) {
-        model.addAttribute("clientKey", clientKey);
-        return "payments/checkout";
-    }
+    private final PaymentConfirmUseCase paymentConfirmUseCase;
 
     @GetMapping("/success")
     public String success(
@@ -33,10 +25,16 @@ public class PaymentController {
             @RequestParam Long amount,
             Model model
     ) {
-        model.addAttribute("paymentKey", paymentKey);
-        model.addAttribute("orderId", orderId);
-        model.addAttribute("amount", amount);
-        return "payments/success";
+        try {
+            paymentConfirmUseCase.confirm(paymentKey, orderId, amount);
+            return "redirect:/?payment=success";
+        } catch (PaymentAmountMismatchException e) {
+            return failView(model, "AMOUNT_MISMATCH", e.getMessage(), orderId);
+        } catch (TossPaymentException e) {
+            return failView(model, e.getCode(), e.getMessage(), orderId);
+        } catch (DomainException e) {
+            return failView(model, e.getErrorPolicy().code(), e.getMessage(), orderId);
+        }
     }
 
     @GetMapping("/fail")

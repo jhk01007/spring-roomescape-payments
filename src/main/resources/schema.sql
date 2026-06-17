@@ -45,3 +45,18 @@ CREATE TABLE payment_session
     PRIMARY KEY (order_id),
     FOREIGN KEY (reservation_id) REFERENCES reservation (id)
 );
+
+CREATE TABLE toss_payment
+(
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    reservation_id BIGINT       NOT NULL,
+    payment_key    VARCHAR(255) NOT NULL,
+    amount         BIGINT       NOT NULL,
+    status         VARCHAR(50)  NOT NULL,
+    approved_at    TIMESTAMP    NOT NULL,
+    requested_at   TIMESTAMP    NOT NULL,
+
+    PRIMARY KEY (id),
+    UNIQUE (payment_key),
+    FOREIGN KEY (reservation_id) REFERENCES reservation (id)
+);

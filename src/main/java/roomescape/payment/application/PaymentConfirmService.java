@@ -1,0 +1,40 @@
+package roomescape.payment.application;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import roomescape.common.exception.DomainException;
+import roomescape.payment.application.port.in.PaymentConfirmUseCase;
+import roomescape.payment.application.port.out.PaymentGateway;
+import roomescape.payment.application.port.out.PaymentSessionInfo;
+import roomescape.payment.application.port.out.PaymentSessionRepository;
+import roomescape.payment.domain.PaymentConfirmation;
+import roomescape.payment.domain.PaymentResult;
+import roomescape.payment.domain.exception.PaymentAmountMismatchException;
+
+import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_SESSION_NOT_FOUND;
+
+/**
+ * 결제 승인 유스케이스. 게이트웨이 호출 '전에' 금액을 검증하는 것이 핵심이다.
+ */
+@Service
+@RequiredArgsConstructor
+public class PaymentConfirmService implements PaymentConfirmUseCase {
+
+    private final PaymentSessionRepository paymentSessionRepository;
+    private final PaymentGateway paymentGateway;
+    private final PaymentCompleteService paymentCompleteService;
+
+    public PaymentResult confirm(String paymentKey, String orderId, Long amount) {
+        PaymentSessionInfo paymentSession = paymentSessionRepository.findById(orderId)
+                .orElseThrow(() -> new DomainException(PAYMENT_SESSION_NOT_FOUND));
+        if (!paymentSession.isSameAmount(amount)) {
+            throw new PaymentAmountMismatchException(paymentSession.amount(), amount);
+        }
+        PaymentConfirmation confirmation = new PaymentConfirmation(paymentKey, orderId, amount);
+        PaymentResult paymentResult = paymentGateway.confirm(confirmation);
+        paymentCompleteService.complete(paymentResult);
+
+        return paymentResult;
+    }
+
+}
