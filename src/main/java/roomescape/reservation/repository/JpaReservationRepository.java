@@ -7,8 +7,12 @@ import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.Status;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface JpaReservationRepository extends JpaRepository<Reservation, Long> {
+
+    List<Reservation> findAllByStatusAndLastModifiedAtLessThanEqual(Status status, LocalDateTime lastModifiedAt);
 
     @Query("""
             SELECT COUNT(reservation) > 0

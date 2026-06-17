@@ -22,7 +22,9 @@ import java.time.LocalTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static roomescape.payment.domain.PaymentStatus.DONE;
+import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_EXPIRED;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_RESERVATION_NOT_PENDING;
+import static roomescape.reservation.domain.Status.CANCELED;
 import static roomescape.reservation.domain.Status.CONFIRMED;
 import static roomescape.reservation.domain.Status.PENDING;
 
@@ -91,6 +93,19 @@ class PaymentCompleteServiceTest {
         assertThatThrownBy(() -> paymentCompleteService.complete(paymentResult("payment-key-2", "order-2", AMOUNT)))
                 .isInstanceOf(DomainException.class)
                 .hasMessage(PAYMENT_RESERVATION_NOT_PENDING.message());
+    }
+
+    @Test
+    @DisplayName("취소된 예약의 결제를 완료하려고 하면 만료된 결제 예외가 발생한다.")
+    void complete_fail_expiredReservation() {
+        // given
+        Reservation reservation = insertReservation(CANCELED);
+        paymentSessionRepository.save("order-3", reservation.getId(), AMOUNT);
+
+        // when, then
+        assertThatThrownBy(() -> paymentCompleteService.complete(paymentResult("payment-key-3", "order-3", AMOUNT)))
+                .isInstanceOf(DomainException.class)
+                .hasMessage(PAYMENT_EXPIRED.message());
     }
 
     private Reservation insertReservation(roomescape.reservation.domain.Status status) {

@@ -308,6 +308,15 @@ const API_BASE = "";
       return fallback;
     }
 
+    function redirectToPaymentFail(message) {
+      const params = new URLSearchParams();
+      params.set("payment", "fail");
+      if (message) {
+        params.set("message", message);
+      }
+      window.location.assign(`/?${params.toString()}`);
+    }
+
     function showErrorPopup(message, title = "확인해주세요") {
       const text = String(message || "요청을 처리하지 못했습니다.");
       if (!elements.errorPopup) {
@@ -955,26 +964,17 @@ const API_BASE = "";
           failUrl: window.location.origin + "/?payment=fail"
         });
       } catch (error) {
-        let failureCanceled = false;
+        let message = error.code === "USER_CANCEL"
+          ? "결제가 취소되었습니다. 다시 예약해주세요."
+          : endpointMessageOr(error, "결제가 완료되지 않았습니다. 다시 예약해주세요.");
         if (prepared?.orderId) {
           try {
             await postJson("/payments/failures", { orderId: prepared.orderId });
-            failureCanceled = true;
           } catch (failureError) {
-            setPaymentMessage(endpointMessageOr(failureError, "결제 실패 후 예약 취소 처리에 실패했습니다."), "error");
-            elements.paymentButton.disabled = false;
-            return;
+            message = endpointMessageOr(failureError, "결제 실패 후 예약 취소 처리에 실패했습니다.");
           }
         }
-        if (error.code === "USER_CANCEL") {
-          setPaymentMessage(
-            failureCanceled ? "결제가 취소되어 예약도 취소되었습니다." : "결제가 취소되었습니다.",
-            "error"
-          );
-        } else {
-          setPaymentMessage(endpointMessageOr(error, "결제 요청에 실패했습니다."), "error");
-        }
-        elements.paymentButton.disabled = false;
+        redirectToPaymentFail(message);
       }
     }
 

@@ -26,6 +26,7 @@ import roomescape.theme.domain.Theme;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -161,6 +162,11 @@ class ReservationConcurrencyTest {
         @Override
         public PageResult<Reservation> findAllByStatusCanceledNot(int page, int size) {
             return delegate.findAllByStatusCanceledNot(page, size);
+        }
+
+        @Override
+        public List<Reservation> findAllPendingLastModifiedAtBeforeOrEqual(LocalDateTime lastModifiedAt) {
+            return delegate.findAllPendingLastModifiedAtBeforeOrEqual(lastModifiedAt);
         }
 
         @Override

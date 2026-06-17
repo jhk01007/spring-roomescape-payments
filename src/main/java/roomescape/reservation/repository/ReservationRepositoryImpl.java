@@ -103,6 +103,14 @@ public class ReservationRepositoryImpl implements ReservationRepository {
     }
 
     @Override
+    public List<Reservation> findAllPendingLastModifiedAtBeforeOrEqual(LocalDateTime lastModifiedAt) {
+        return jpaReservationRepository.findAllByStatusAndLastModifiedAtLessThanEqual(
+                Status.PENDING,
+                lastModifiedAt
+        );
+    }
+
+    @Override
     public List<ReservationWaitingDto> findWaitingAllByGuestName(String guestName) {
         return findWaitingRows("""
                 SELECT *

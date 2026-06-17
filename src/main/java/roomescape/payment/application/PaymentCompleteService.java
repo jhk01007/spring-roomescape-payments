@@ -15,6 +15,7 @@ import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_CONFIRMATION_NOT_DONE;
+import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_EXPIRED;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_RESERVATION_NOT_PENDING;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_SESSION_NOT_FOUND;
 import static roomescape.reservation.exception.ReservationErrorCode.RESERVATION_NOT_FOUND;
@@ -40,6 +41,9 @@ public class PaymentCompleteService {
         Reservation reservation = reservationRepository.findById(paymentSession.reservationId())
                 .orElseThrow(() -> new DomainException(RESERVATION_NOT_FOUND));
 
+        if (reservation.isCanceled()) {
+            throw new DomainException(PAYMENT_EXPIRED);
+        }
         if (!reservation.isPending()) {
             throw new DomainException(PAYMENT_RESERVATION_NOT_PENDING);
         }

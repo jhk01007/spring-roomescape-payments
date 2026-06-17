@@ -4,6 +4,7 @@ import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.common.dto.PageResult;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,8 @@ public interface ReservationRepository {
     Optional<ReservationWaitingDto> findWaitingById(Long id);
 
     PageResult<Reservation> findAllByStatusCanceledNot(int page, int size);
+
+    List<Reservation> findAllPendingLastModifiedAtBeforeOrEqual(LocalDateTime lastModifiedAt);
 
     List<ReservationWaitingDto> findWaitingAllByGuestName(String guestName);
 

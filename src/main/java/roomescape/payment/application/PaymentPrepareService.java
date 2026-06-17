@@ -14,6 +14,7 @@ import roomescape.theme.domain.Theme;
 
 import java.util.UUID;
 
+import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_EXPIRED;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_RESERVATION_NOT_PENDING;
 import static roomescape.reservation.exception.ReservationErrorCode.RESERVATION_NOT_FOUND;
 
@@ -46,6 +47,9 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
     }
 
     private void validatePending(Reservation reservation) {
+        if (reservation.isCanceled()) {
+            throw new DomainException(PAYMENT_EXPIRED);
+        }
         if (!reservation.isPending()) {
             throw new DomainException(PAYMENT_RESERVATION_NOT_PENDING);
         }
