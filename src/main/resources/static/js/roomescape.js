@@ -1004,10 +1004,6 @@ const API_BASE = "";
           state.reservations = [...state.reservations, createdReservation];
           state.selectedSlotAvailability = { availability: SLOT_WAITING };
           await openPaymentPanel(payload, paymentReservation, theme, time);
-          showToast(
-            `${name}님의 결제 대기 예약이 생성되었습니다.`,
-            `${formatDate(payload.date)} · ${theme.name} · ${normalizeTime(time.startAt)}`
-          );
           renderTimes();
           syncSummary();
           return;

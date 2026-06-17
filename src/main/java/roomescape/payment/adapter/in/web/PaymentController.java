@@ -23,7 +23,6 @@ public class PaymentController {
     @GetMapping({"", "/"})
     public String checkout(Model model) {
         model.addAttribute("clientKey", clientKey);
-        model.addAttribute("amount", DEFAULT_AMOUNT);
         return "payments/checkout";
     }
 
