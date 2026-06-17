@@ -7,6 +7,7 @@ import roomescape.common.exception.DomainException;
 import roomescape.payment.application.port.in.PaymentPrepareCommand;
 import roomescape.payment.application.port.in.PaymentPrepareResult;
 import roomescape.payment.application.port.in.PaymentPrepareUseCase;
+import roomescape.payment.application.port.out.PaymentSessionRepository;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.service.validator.ReservationValidator;
@@ -32,6 +33,7 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
     private final ReservationTimeRepository reservationTimeRepository;
     private final ThemeRepository themeRepository;
     private final ReservationValidator reservationValidator;
+    private final PaymentSessionRepository paymentSessionRepository;
     private final Clock clock;
 
     @Override
@@ -53,8 +55,9 @@ public class PaymentPrepareService implements PaymentPrepareUseCase {
 
         Reservation saved = reservationRepository.save(reservation);
         String orderId = createOrderId();
+        paymentSessionRepository.save(orderId, saved.getId(), command.amount());
 
-        return new PaymentPrepareResult(orderId, saved.getId(), command.amount());
+        return new PaymentPrepareResult(orderId, saved.getId());
     }
 
     private ReservationTime getReservationTime(Long timeId) {

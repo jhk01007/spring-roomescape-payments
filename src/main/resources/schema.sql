@@ -35,3 +35,13 @@ CREATE TABLE reservation
     FOREIGN KEY (time_id) REFERENCES reservation_time (id),
     FOREIGN KEY (theme_id) REFERENCES theme (id)
 );
+
+CREATE TABLE payment_session
+(
+    order_id       VARCHAR(255) NOT NULL,
+    reservation_id BIGINT       NOT NULL,
+    amount         BIGINT       NOT NULL,
+
+    PRIMARY KEY (order_id),
+    FOREIGN KEY (reservation_id) REFERENCES reservation (id)
+);
