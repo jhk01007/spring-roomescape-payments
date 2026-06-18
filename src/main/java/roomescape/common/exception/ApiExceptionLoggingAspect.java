@@ -14,8 +14,8 @@ import org.springframework.stereotype.Component;
 public class ApiExceptionLoggingAspect {
 
     @AfterReturning(
-            pointcut = "within(roomescape.common.exception.DomainExceptionHandler) || " +
-                    "within(roomescape.common.exception.CustomSpringMvcExceptionHandler)",
+            pointcut = "@within(org.springframework.web.bind.annotation.RestControllerAdvice) && " +
+                    "@annotation(org.springframework.web.bind.annotation.ExceptionHandler)",
             returning = "response"
     )
     public void logApiException(JoinPoint joinPoint, Object response) {
