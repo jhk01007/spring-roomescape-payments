@@ -5,10 +5,12 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import roomescape.payment.adapter.out.client.dto.ConfirmRequest;
 import roomescape.payment.adapter.out.client.dto.TossErrorResponse;
 import roomescape.payment.adapter.out.client.dto.TossPaymentResponse;
 import roomescape.payment.application.port.out.PaymentGateway;
+import roomescape.payment.adapter.out.client.retry.RetryablePayment;
 import roomescape.payment.domain.PaymentConfirmation;
 import roomescape.payment.domain.PaymentResult;
 import roomescape.payment.domain.PaymentStatus;
@@ -31,8 +33,8 @@ public class TossPaymentGateway implements PaymentGateway {
     }
 
     @Override
+    @RetryablePayment(retryOn = TossPaymentException.Retryable.class)
     public PaymentResult confirm(PaymentConfirmation confirmation) {
-
         ConfirmRequest confirmRequest = new ConfirmRequest(confirmation.paymentKey(), confirmation.orderId(), confirmation.amount());
         TossPaymentResponse tossPaymentResponse = tossRestClient.post()
                 .uri("/v1/payments/confirm")

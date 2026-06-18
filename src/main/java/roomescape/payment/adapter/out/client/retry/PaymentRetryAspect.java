@@ -1,4 +1,4 @@
-package roomescape.payment.application.retry;
+package roomescape.payment.adapter.out.client.retry;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -6,26 +6,28 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
-import roomescape.payment.adapter.out.client.TossPaymentException;
 
 @Aspect
 @Component
 @Slf4j
-public class TossPaymentRetryAspect {
+public class PaymentRetryAspect {
 
-    @Around("@annotation(roomescape.payment.application.retry.RetryableTossPayment)")
+    @Around("@annotation(roomescape.payment.adapter.out.client.retry.RetryablePayment)")
     public Object retry(ProceedingJoinPoint joinPoint) throws Throwable {
-        RetryableTossPayment retryable = retryableAnnotation(joinPoint);
+        RetryablePayment retryable = retryableAnnotation(joinPoint);
         int maxAttempts = Math.max(1, retryable.maxAttempts());
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 return joinPoint.proceed();
-            } catch (TossPaymentException.Retryable exception) {
+            } catch (Throwable exception) {
+                if (!retryableException(exception, retryable.retryOn())) {
+                    throw exception;
+                }
                 if (attempt == maxAttempts) {
                     throw exception;
                 }
-                log.warn("Retryable Toss payment error. retry {}/{}", attempt + 1, maxAttempts);
+                log.warn("Retryable payment error. retry {}/{}", attempt + 1, maxAttempts);
                 pause(retryable.delayMillis(), exception);
             }
         }
@@ -33,12 +35,21 @@ public class TossPaymentRetryAspect {
         throw new IllegalStateException("Retry attempts must be greater than zero.");
     }
 
-    private RetryableTossPayment retryableAnnotation(ProceedingJoinPoint joinPoint) {
+    private RetryablePayment retryableAnnotation(ProceedingJoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        return signature.getMethod().getAnnotation(RetryableTossPayment.class);
+        return signature.getMethod().getAnnotation(RetryablePayment.class);
     }
 
-    private void pause(long delayMillis, TossPaymentException.Retryable exception) {
+    private boolean retryableException(Throwable exception, Class<? extends Throwable>[] retryOn) {
+        for (Class<? extends Throwable> retryableExceptionClass : retryOn) {
+            if (retryableExceptionClass.isInstance(exception)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void pause(long delayMillis, Throwable exception) throws Throwable {
         if (delayMillis <= 0) {
             return;
         }
