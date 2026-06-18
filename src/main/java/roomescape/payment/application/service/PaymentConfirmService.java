@@ -1,4 +1,4 @@
-package roomescape.payment.application;
+package roomescape.payment.application.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,13 +22,10 @@ import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_SESSI
 public class PaymentConfirmService implements PaymentConfirmUseCase {
 
     private final PaymentSessionRepository paymentSessionRepository;
-    private final PaymentRepository paymentRepository;
     private final PaymentGatewayRetryExecutor paymentGatewayRetryExecutor;
     private final PaymentCompleteService paymentCompleteService;
 
     public PaymentResult confirm(String paymentKey, String orderId, Long amount) {
-        validateAlreadyPaymentConfirmed(paymentKey);
-
         PaymentSessionInfo paymentSession = getPaymentSession(orderId);
         validateAmount(amount, paymentSession);
         paymentCompleteService.validateCompletable(paymentSession.reservationId());
@@ -38,12 +35,6 @@ public class PaymentConfirmService implements PaymentConfirmUseCase {
         paymentCompleteService.complete(paymentResult);
 
         return paymentResult;
-    }
-
-    private void validateAlreadyPaymentConfirmed(String paymentKey) {
-        if (paymentRepository.existsByPaymentKey(paymentKey)) {
-            throw new DomainException(PAYMENT_ALREADY_PROCESSED);
-        }
     }
 
     private static void validateAmount(Long amount, PaymentSessionInfo paymentSession) {

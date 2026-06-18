@@ -14,6 +14,7 @@ import roomescape.payment.adapter.out.client.TossPaymentException;
 import roomescape.payment.application.port.out.PaymentGateway;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
 import roomescape.payment.application.retry.TossPaymentRetryAspect;
+import roomescape.payment.application.service.PaymentConfirmService;
 import roomescape.payment.domain.PaymentConfirmation;
 import roomescape.payment.domain.PaymentResult;
 import roomescape.payment.domain.PaymentStatus;

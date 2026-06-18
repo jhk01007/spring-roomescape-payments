@@ -1,10 +1,12 @@
 package roomescape.payment.application;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
+import roomescape.payment.application.service.PaymentConfirmService;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
@@ -32,6 +34,9 @@ class PaymentConfirmServiceTest {
     @Autowired
     SQLFixtureGenerator fixtureGenerator;
 
+    @Autowired
+    EntityManager entityManager;
+
     @Test
     @DisplayName("이미 처리된 결제를 다시 승인하면 중복 처리 예외가 발생한다.")
     void confirm_fail_alreadyProcessedPayment() {
@@ -39,6 +44,8 @@ class PaymentConfirmServiceTest {
         Reservation reservation = insertPendingReservation();
         paymentSessionRepository.save("order-1", reservation.getId(), AMOUNT);
         paymentConfirmService.confirm("payment-key-1", "order-1", AMOUNT);
+        entityManager.flush();
+        entityManager.clear();
 
         // when, then
         assertThatThrownBy(() -> paymentConfirmService.confirm("payment-key-1", "order-1", AMOUNT))

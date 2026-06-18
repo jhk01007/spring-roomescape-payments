@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import roomescape.payment.adapter.out.client.TossPaymentException;
 import roomescape.payment.adapter.in.web.dto.PaymentConfirmRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentFailureRequest;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
@@ -68,6 +69,24 @@ class PaymentControllerTest {
         then(paymentConfirmUseCase)
                 .should()
                 .confirm("payment-key", "order-id", 40_000L);
+    }
+
+    @Test
+    @DisplayName("Toss 결제 예외가 발생하면 Toss 예외 응답 형식으로 반환한다.")
+    void confirm_fail_tossPaymentException() throws Exception {
+        // given
+        PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key", "order-id", 40_000L);
+        given(paymentConfirmUseCase.confirm("payment-key", "order-id", 40_000L))
+                .willThrow(new TossPaymentException.AlreadyProcessed("이미 처리된 결제 입니다."));
+
+        // when, then
+        mockMvc.perform(post("/payments/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.path").value("/payments/confirm"))
+                .andExpect(jsonPath("$.code").value("ALREADY_PROCESSED_PAYMENT"))
+                .andExpect(jsonPath("$.message").value("이미 처리된 결제 입니다."));
     }
 
     @Test

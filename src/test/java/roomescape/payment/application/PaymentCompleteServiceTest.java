@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.payment.adapter.out.persistence.JpaTossPaymentRepository;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
+import roomescape.payment.application.service.PaymentCompleteService;
 import roomescape.payment.domain.PaymentResult;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;

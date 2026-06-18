@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.payment.application.port.in.dto.PaymentFailureResult;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
+import roomescape.payment.application.service.PaymentFailureService;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservationtime.domain.ReservationTime;

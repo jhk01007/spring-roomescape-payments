@@ -1,4 +1,4 @@
-package roomescape.payment.application;
+package roomescape.payment.application.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

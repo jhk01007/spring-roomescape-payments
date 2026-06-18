@@ -1,4 +1,4 @@
-package roomescape.payment.application;
+package roomescape.payment.application.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,6 @@ public class PaymentCompleteService {
     public void validateCompletable(Long reservationId) {
         Reservation reservation = getReservation(reservationId);
         validateNotExpired(reservation);
-        validatePendingStatus(reservation);
     }
 
     @Transactional
