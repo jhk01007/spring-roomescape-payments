@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import roomescape.common.exception.DomainException;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
-import roomescape.payment.application.port.out.PaymentGateway;
 import roomescape.payment.application.port.out.PaymentRepository;
 import roomescape.payment.application.port.out.PaymentSessionInfo;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
@@ -24,7 +23,7 @@ public class PaymentConfirmService implements PaymentConfirmUseCase {
 
     private final PaymentSessionRepository paymentSessionRepository;
     private final PaymentRepository paymentRepository;
-    private final PaymentGateway paymentGateway;
+    private final PaymentGatewayRetryExecutor paymentGatewayRetryExecutor;
     private final PaymentCompleteService paymentCompleteService;
 
     public PaymentResult confirm(String paymentKey, String orderId, Long amount) {
@@ -35,7 +34,7 @@ public class PaymentConfirmService implements PaymentConfirmUseCase {
         paymentCompleteService.validateCompletable(paymentSession.reservationId());
 
         PaymentConfirmation confirmation = new PaymentConfirmation(paymentKey, orderId, amount);
-        PaymentResult paymentResult = paymentGateway.confirm(confirmation);
+        PaymentResult paymentResult = paymentGatewayRetryExecutor.confirm(confirmation);
         paymentCompleteService.complete(paymentResult);
 
         return paymentResult;
