@@ -28,4 +28,9 @@ public class TossPaymentRepository implements PaymentRepository {
         );
         jpaTossPaymentRepository.save(tossPayment);
     }
+
+    @Override
+    public boolean existsByPaymentKey(String paymentKey) {
+        return jpaTossPaymentRepository.existsByPaymentKey(paymentKey);
+    }
 }
