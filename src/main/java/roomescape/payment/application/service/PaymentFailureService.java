@@ -37,6 +37,6 @@ public class PaymentFailureService implements PaymentFailureUseCase {
             throw new DomainException(PAYMENT_FAILURE_NOT_ALLOWED);
         }
 
-        return new PaymentFailureResult(orderId, reservation.getId(), reservation.getStatus());
+        return new PaymentFailureResult(orderId, reservation.getId(), reservation.getReservationStatus());
     }
 }

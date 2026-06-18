@@ -24,14 +24,17 @@ public class TossPayment {
     @Column(name = "payment_key", nullable = false)
     private String paymentKey;
 
+    @Column(name = "order_id", nullable = false)
+    private String orderId;
+
     @Column(nullable = false)
     private Long amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentStatus status;
+    private PaymentStatus paymentStatus;
 
-    @Column(name = "approved_at", nullable = false)
+    @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
     @Column(name = "requested_at", nullable = false)
@@ -44,17 +47,19 @@ public class TossPayment {
             Long id,
             Reservation reservation,
             String paymentKey,
+            String orderId,
             Long amount,
-            PaymentStatus status,
+            PaymentStatus paymentStatus,
             LocalDateTime approvedAt,
             LocalDateTime requestedAt
     ) {
-        validate(reservation, paymentKey, amount, status, approvedAt, requestedAt);
+        validate(reservation, paymentKey, orderId, amount, paymentStatus, approvedAt, requestedAt);
         this.id = id;
         this.reservation = reservation;
         this.paymentKey = paymentKey;
+        this.orderId = orderId;
         this.amount = amount;
-        this.status = status;
+        this.paymentStatus = paymentStatus;
         this.approvedAt = approvedAt;
         this.requestedAt = requestedAt;
     }
@@ -62,33 +67,51 @@ public class TossPayment {
     public static TossPayment create(
             Reservation reservation,
             String paymentKey,
+            String orderId,
             Long amount,
             PaymentStatus status,
             LocalDateTime approvedAt,
             LocalDateTime requestedAt
     ) {
-        return new TossPayment(null, reservation, paymentKey, amount, status, approvedAt, requestedAt);
+        return new TossPayment(null, reservation, paymentKey, orderId, amount, status, approvedAt, requestedAt);
     }
 
     public static TossPayment of(
             Long id,
             Reservation reservation,
             String paymentKey,
+            String orderId,
             Long amount,
             PaymentStatus status,
             LocalDateTime approvedAt,
             LocalDateTime requestedAt
     ) {
-        return new TossPayment(id, reservation, paymentKey, amount, status, approvedAt, requestedAt);
+        return new TossPayment(id, reservation, paymentKey, orderId, amount, status, approvedAt, requestedAt);
     }
 
     public Long getReservationId() {
         return reservation.getId();
     }
 
+    public void update(
+            String orderId,
+            Long amount,
+            PaymentStatus status,
+            LocalDateTime approvedAt,
+            LocalDateTime requestedAt
+    ) {
+        validate(reservation, paymentKey, orderId, amount, status, approvedAt, requestedAt);
+        this.orderId = orderId;
+        this.amount = amount;
+        this.paymentStatus = status;
+        this.approvedAt = approvedAt;
+        this.requestedAt = requestedAt;
+    }
+
     private void validate(
             Reservation reservation,
             String paymentKey,
+            String orderId,
             Long amount,
             PaymentStatus status,
             LocalDateTime approvedAt,
@@ -100,13 +123,16 @@ public class TossPayment {
         if (paymentKey == null || paymentKey.isBlank()) {
             throw new IllegalArgumentException("결제 키는 필수입니다.");
         }
+        if (orderId == null || orderId.isBlank()) {
+            throw new IllegalArgumentException("주문 ID는 필수입니다.");
+        }
         if (amount == null || amount <= 0) {
             throw new IllegalArgumentException("결제 금액은 양수여야 합니다.");
         }
         if (status == null) {
             throw new IllegalArgumentException("결제 상태는 필수입니다.");
         }
-        if (approvedAt == null) {
+        if (PaymentStatus.DONE.equals(status) && approvedAt == null) {
             throw new IllegalArgumentException("결제 승인 시각은 필수입니다.");
         }
         if (requestedAt == null) {

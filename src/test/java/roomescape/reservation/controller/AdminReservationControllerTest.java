@@ -13,7 +13,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.controller.dto.ReservationResponse;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.integration.controller.ControllerTest;
 import roomescape.test_config.integration.controller.MockedBean;
@@ -57,9 +57,9 @@ class AdminReservationControllerTest {
 
         LocalDateTime now = LocalDateTime.now();
         List<Reservation> reservations = List.of(
-                Reservation.of(1L, "브라운", LocalDate.of(2023, 8, 5), time, theme, Status.CONFIRMED, now),
-                Reservation.of(2L, "포비", LocalDate.of(2023, 8, 6), time, theme, Status.WAITING, now),
-                Reservation.of(3L, "조이", LocalDate.of(2023, 8, 7), time, theme, Status.WAITING, now)
+                Reservation.of(1L, "브라운", LocalDate.of(2023, 8, 5), time, theme, ReservationStatus.CONFIRMED, now),
+                Reservation.of(2L, "포비", LocalDate.of(2023, 8, 6), time, theme, ReservationStatus.WAITING, now),
+                Reservation.of(3L, "조이", LocalDate.of(2023, 8, 7), time, theme, ReservationStatus.WAITING, now)
         );
         given(reservationService.findAllReservations(1, 20)).willReturn(PageResult.of(reservations, 1, 20, 3));
 
@@ -89,7 +89,7 @@ class AdminReservationControllerTest {
         ReservationTime time = ReservationTime.of(1L, LocalTime.of(10, 0));
         Theme theme = Theme.of(1L, "레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme-1.png");
         List<Reservation> reservations = List.of(
-                Reservation.of(3L, "조이", LocalDate.of(2023, 8, 7), time, theme, Status.CONFIRMED, LocalDateTime.now())
+                Reservation.of(3L, "조이", LocalDate.of(2023, 8, 7), time, theme, ReservationStatus.CONFIRMED, LocalDateTime.now())
         );
         given(reservationService.findAllReservations(2, 2)).willReturn(PageResult.of(reservations, 2, 2, 3));
 

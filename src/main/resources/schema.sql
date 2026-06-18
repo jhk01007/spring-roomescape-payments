@@ -27,7 +27,7 @@ CREATE TABLE reservation
     time_id          BIGINT       NOT NULL,
     theme_id         BIGINT       NOT NULL,
     cancel_token     BIGINT       NOT NULL DEFAULT 0,
-    status           VARCHAR(50)  NOT NULL,
+    reservation_status           VARCHAR(50)  NOT NULL,
     last_modified_at TIMESTAMP    NOT NULL,
     payment_expires_at TIMESTAMP,
 
@@ -52,12 +52,14 @@ CREATE TABLE toss_payment
     id             BIGINT       NOT NULL AUTO_INCREMENT,
     reservation_id BIGINT       NOT NULL,
     payment_key    VARCHAR(255) NOT NULL,
+    order_id       VARCHAR(255) NOT NULL,
     amount         BIGINT       NOT NULL,
-    status         VARCHAR(50)  NOT NULL,
-    approved_at    TIMESTAMP    NOT NULL,
+    payment_status         VARCHAR(50)  NOT NULL,
+    approved_at    TIMESTAMP,
     requested_at   TIMESTAMP    NOT NULL,
 
     PRIMARY KEY (id),
     UNIQUE (payment_key),
+    UNIQUE (order_id),
     FOREIGN KEY (reservation_id) REFERENCES reservation (id)
 );

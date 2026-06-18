@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.theme.domain.Theme;
@@ -31,7 +31,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 r.id AS reservation_id,
                 r.guest_name,
                 r.date,
-                r.status AS status,
+                r.reservation_status AS reservation_status,
                 r.last_modified_at AS last_modified_at,
                 r.payment_expires_at AS payment_expires_at,
                 t.id AS time_id,
@@ -44,7 +44,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 th.price AS theme_price,
                 th.deleted_at AS theme_deleted_at,
                 ROW_NUMBER() OVER (
-                    PARTITION BY r.date, t.id, th.id, r.status
+                    PARTITION BY r.date, t.id, th.id, r.reservation_status
                     ORDER BY r.last_modified_at
                 ) AS wait_number
             FROM reservation r
@@ -84,10 +84,10 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                         FROM Reservation reservation
                         JOIN FETCH reservation.time time
                         JOIN FETCH reservation.theme
-                        WHERE reservation.status != :status
+                        WHERE reservation.reservationStatus != :reservationStatus
                         ORDER BY reservation.date, time.startAt
                         """, Reservation.class)
-                .setParameter("status", Status.CANCELED)
+                .setParameter("reservationStatus", ReservationStatus.CANCELED)
                 .setFirstResult((page - 1) * size)
                 .setMaxResults(size)
                 .getResultList();
@@ -95,9 +95,9 @@ public class ReservationRepositoryImpl implements ReservationRepository {
         Long count = entityManager.createQuery("""
                         SELECT COUNT(reservation)
                         FROM Reservation reservation
-                        WHERE reservation.status != :status
+                        WHERE reservation.reservationStatus != :reservationStatus
                         """, Long.class)
-                .setParameter("status", Status.CANCELED)
+                .setParameter("reservationStatus", ReservationStatus.CANCELED)
                 .getSingleResult();
 
         return PageResult.of(reservations, page, size, count);
@@ -105,8 +105,8 @@ public class ReservationRepositoryImpl implements ReservationRepository {
 
     @Override
     public List<Reservation> findAllPendingPaymentExpiresAtBeforeOrEqual(LocalDateTime paymentExpiresAt) {
-        return jpaReservationRepository.findAllByStatusAndPaymentExpiresAtLessThanEqual(
-                Status.PENDING,
+        return jpaReservationRepository.findAllByReservationStatusAndPaymentExpiresAtLessThanEqual(
+                ReservationStatus.PENDING,
                 paymentExpiresAt
         );
     }
@@ -137,7 +137,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 WHERE x.date = :date
                   AND x.time_id = :timeId
                   AND x.theme_id = :themeId
-                  AND x.status = 'WAITING'
+                  AND x.reservation_status = 'WAITING'
                   AND x.wait_number = 1
                 """.formatted(WAITING_SELECT))
                 .setParameter("date", Date.valueOf(date))
@@ -160,7 +160,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 reservation.getDate(),
                 time,
                 theme,
-                reservation.getStatus(),
+                reservation.getReservationStatus(),
                 reservation.getLastModifiedAt(),
                 reservation.getPaymentExpiresAt()
         );
@@ -178,13 +178,13 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                           AND reservation.time.id = :timeId
                           AND reservation.theme.id = :themeId
                           AND reservation.guestName = :guestName
-                          AND reservation.status != :status
+                          AND reservation.reservationStatus != :reservationStatus
                         """, Long.class)
                 .setParameter("date", date)
                 .setParameter("timeId", timeId)
                 .setParameter("themeId", themeId)
                 .setParameter("guestName", guestName)
-                .setParameter("status", Status.CANCELED)
+                .setParameter("reservationStatus", ReservationStatus.CANCELED)
                 .getSingleResult();
 
         return count > 0;
@@ -198,12 +198,12 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                         WHERE reservation.date = :date
                           AND reservation.time.id = :timeId
                           AND reservation.theme.id = :themeId
-                          AND reservation.status IN :statuses
+                          AND reservation.reservationStatus IN :statuses
                         """, Long.class)
                 .setParameter("date", date)
                 .setParameter("timeId", timeId)
                 .setParameter("themeId", themeId)
-                .setParameter("statuses", List.of(Status.CONFIRMED, Status.PENDING))
+                .setParameter("statuses", List.of(ReservationStatus.CONFIRMED, ReservationStatus.PENDING, ReservationStatus.REQUIRES_CHECK))
                 .getSingleResult();
 
         return count > 0;
@@ -215,10 +215,10 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                         SELECT COUNT(reservation)
                         FROM Reservation reservation
                         WHERE reservation.time.id = :timeId
-                          AND reservation.status != :status
+                          AND reservation.reservationStatus != :reservationStatus
                         """, Long.class)
                 .setParameter("timeId", timeId)
-                .setParameter("status", Status.CANCELED)
+                .setParameter("reservationStatus", ReservationStatus.CANCELED)
                 .getSingleResult();
 
         return count > 0;
@@ -230,10 +230,10 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                         SELECT COUNT(reservation)
                         FROM Reservation reservation
                         WHERE reservation.theme.id = :themeId
-                          AND reservation.status != :status
+                          AND reservation.reservationStatus != :reservationStatus
                         """, Long.class)
                 .setParameter("themeId", themeId)
-                .setParameter("status", Status.CANCELED)
+                .setParameter("reservationStatus", ReservationStatus.CANCELED)
                 .getSingleResult();
 
         return count > 0;
@@ -241,7 +241,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
 
     @Override
     public boolean existsBySlot(LocalDate date, Long timeId, Long themeId) {
-        return jpaReservationRepository.existsByDateAndTimeIdAndThemeId(date, timeId, themeId, Status.CANCELED);
+        return jpaReservationRepository.existsByDateAndTimeIdAndThemeId(date, timeId, themeId, ReservationStatus.CANCELED);
     }
 
     private Query findWaitingRows(String sql) {
@@ -250,7 +250,9 @@ public class ReservationRepositoryImpl implements ReservationRepository {
 
     private ReservationWaitingDto toReservationWaitingDto(Object row) {
         Object[] columns = (Object[]) row;
-        return ReservationWaitingDto.from(toReservation(columns), toLong(columns[15]));
+        Reservation reservation = toReservation(columns);
+        long waitNumber = reservation.getReservationStatus() == ReservationStatus.WAITING ? toLong(columns[15]) : 0;
+        return ReservationWaitingDto.from(reservation, waitNumber);
     }
 
     private Reservation toReservation(Object row) {
@@ -317,10 +319,10 @@ public class ReservationRepositoryImpl implements ReservationRepository {
         return Timestamp.valueOf(value.toString()).toLocalDateTime();
     }
 
-    private Status toStatus(Object value) {
-        if (value instanceof Status status) {
-            return status;
+    private ReservationStatus toStatus(Object value) {
+        if (value instanceof ReservationStatus reservationStatus) {
+            return reservationStatus;
         }
-        return Status.from(value.toString());
+        return ReservationStatus.from(value.toString());
     }
 }

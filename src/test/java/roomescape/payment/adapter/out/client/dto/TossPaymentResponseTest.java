@@ -18,7 +18,7 @@ class TossPaymentResponseTest {
                   "paymentKey": "payment-key",
                   "orderId": "order-id",
                   "orderName": "레벨2 탈출",
-                  "status": "DONE",
+                  "reservationStatus": "DONE",
                   "totalAmount": 43000,
                   "balanceAmount": 43000,
                   "method": "카드",

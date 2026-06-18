@@ -13,6 +13,7 @@ public enum PaymentStatus {
   PARTIAL_CANCELED,
   ABORTED,
   EXPIRED,
+  REQUIRES_CHECK,
   UNKNOWN;
 
   public static PaymentStatus from(String raw) {

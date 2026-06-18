@@ -26,7 +26,7 @@ INSERT INTO reservation (
     date,
     time_id,
     theme_id,
-    status,
+    reservation_status,
     last_modified_at
 ) VALUES
       (1, 'guest-1', '2026-05-21', 1, 1, 'CONFIRMED', '2026-05-27 09:00:00'),
@@ -94,9 +94,23 @@ INSERT INTO reservation (
 
       (55, 'guest-55', '2026-05-21', 1, 10, 'CONFIRMED', '2026-05-27 09:54:00'),
 
-      (56, 'guest-56', '2026-06-28', 1, 11, 'CONFIRMED', '2026-05-27 09:55:00'),
+      (56, 'guest-56', '2026-06-28', 1, 11, 'REQUIRES_CHECK', '2026-05-27 09:55:00'),
       (57, 'guest-57', '2026-06-28', 2, 11, 'CONFIRMED', '2026-05-27 09:56:00'),
       (58, 'guest-58', '2026-05-20', 1, 11, 'CANCELED', '2026-05-27 09:57:00');
+
+INSERT INTO payment_session (order_id, reservation_id, amount) VALUES
+    ('order-guest-56', 56, 50000);
+
+INSERT INTO toss_payment (
+    reservation_id,
+    payment_key,
+    order_id,
+    amount,
+    payment_status,
+    approved_at,
+    requested_at
+) VALUES
+      (56, 'payment-key-guest-56', 'order-guest-56', 50000, 'REQUIRES_CHECK', NULL, '2026-05-27 09:55:30');
 
 ALTER TABLE theme ALTER COLUMN id RESTART WITH 13;
 ALTER TABLE reservation_time ALTER COLUMN id RESTART WITH 7;

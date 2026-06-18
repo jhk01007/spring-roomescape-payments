@@ -36,7 +36,7 @@ VALUES (1, '10:00:00'),
        (6, '20:00:00');
 
 -- Theme 1: 기간 내 예약 10개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (1, 'theme-1-guest-1', '2026-04-29', 1, 1, 'CONFIRMED', '2026-04-29 09:00:00'),
        (2, 'theme-1-guest-2', '2026-04-29', 2, 1, 'CONFIRMED', '2026-04-29 09:01:00'),
        (3, 'theme-1-guest-3', '2026-04-30', 1, 1, 'WAITING', '2026-04-29 09:02:00'),
@@ -49,7 +49,7 @@ VALUES (1, 'theme-1-guest-1', '2026-04-29', 1, 1, 'CONFIRMED', '2026-04-29 09:00
        (10, 'theme-1-guest-10', '2026-05-05', 1, 1, 'WAITING', '2026-04-29 09:09:00');
 
 -- Theme 2: 기간 내 예약 9개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (11, 'theme-2-guest-1', '2026-04-29', 1, 2, 'CONFIRMED', '2026-04-29 09:10:00'),
        (12, 'theme-2-guest-2', '2026-04-29', 2, 2, 'WAITING', '2026-04-29 09:11:00'),
        (13, 'theme-2-guest-3', '2026-04-30', 1, 2, 'CONFIRMED', '2026-04-29 09:12:00'),
@@ -61,7 +61,7 @@ VALUES (11, 'theme-2-guest-1', '2026-04-29', 1, 2, 'CONFIRMED', '2026-04-29 09:1
        (19, 'theme-2-guest-9', '2026-05-04', 1, 2, 'WAITING', '2026-04-29 09:18:00');
 
 -- Theme 3: 기간 내 예약 8개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (20, 'theme-3-guest-1', '2026-04-29', 1, 3, 'CONFIRMED', '2026-04-29 09:19:00'),
        (21, 'theme-3-guest-2', '2026-04-29', 2, 3, 'WAITING', '2026-04-29 09:20:00'),
        (22, 'theme-3-guest-3', '2026-04-30', 1, 3, 'CONFIRMED', '2026-04-29 09:21:00'),
@@ -72,7 +72,7 @@ VALUES (20, 'theme-3-guest-1', '2026-04-29', 1, 3, 'CONFIRMED', '2026-04-29 09:1
        (27, 'theme-3-guest-8', '2026-05-03', 1, 3, 'CONFIRMED', '2026-04-29 09:26:00');
 
 -- Theme 4: 기간 내 예약 7개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (28, 'theme-4-guest-1', '2026-04-29', 1, 4, 'CONFIRMED', '2026-04-29 09:27:00'),
        (29, 'theme-4-guest-2', '2026-04-29', 2, 4, 'WAITING', '2026-04-29 09:28:00'),
        (30, 'theme-4-guest-3', '2026-04-30', 1, 4, 'CONFIRMED', '2026-04-29 09:29:00'),
@@ -82,7 +82,7 @@ VALUES (28, 'theme-4-guest-1', '2026-04-29', 1, 4, 'CONFIRMED', '2026-04-29 09:2
        (34, 'theme-4-guest-7', '2026-05-02', 1, 4, 'CONFIRMED', '2026-04-29 09:33:00');
 
 -- Theme 5: 기간 내 예약 6개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (35, 'theme-5-guest-1', '2026-04-29', 1, 5, 'CONFIRMED', '2026-04-29 09:34:00'),
        (36, 'theme-5-guest-2', '2026-04-29', 2, 5, 'WAITING', '2026-04-29 09:35:00'),
        (37, 'theme-5-guest-3', '2026-04-30', 1, 5, 'CONFIRMED', '2026-04-29 09:36:00'),
@@ -91,7 +91,7 @@ VALUES (35, 'theme-5-guest-1', '2026-04-29', 1, 5, 'CONFIRMED', '2026-04-29 09:3
        (40, 'theme-5-guest-6', '2026-05-01', 2, 5, 'CANCELED', '2026-04-29 09:39:00');
 
 -- Theme 6: 기간 내 예약 5개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (41, 'theme-6-guest-1', '2026-04-29', 1, 6, 'CONFIRMED', '2026-04-29 09:40:00'),
        (42, 'theme-6-guest-2', '2026-04-29', 2, 6, 'WAITING', '2026-04-29 09:41:00'),
        (43, 'theme-6-guest-3', '2026-04-30', 1, 6, 'CONFIRMED', '2026-04-29 09:42:00'),
@@ -99,29 +99,29 @@ VALUES (41, 'theme-6-guest-1', '2026-04-29', 1, 6, 'CONFIRMED', '2026-04-29 09:4
        (45, 'theme-6-guest-5', '2026-05-01', 1, 6, 'CONFIRMED', '2026-04-29 09:44:00');
 
 -- Theme 7: 기간 내 예약 4개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (46, 'theme-7-guest-1', '2026-04-29', 1, 7, 'CONFIRMED', '2026-04-29 09:45:00'),
        (47, 'theme-7-guest-2', '2026-04-29', 2, 7, 'WAITING', '2026-04-29 09:46:00'),
        (48, 'theme-7-guest-3', '2026-04-30', 1, 7, 'CONFIRMED', '2026-04-29 09:47:00'),
        (49, 'theme-7-guest-4', '2026-04-30', 2, 7, 'CANCELED', '2026-04-29 09:48:00');
 
 -- Theme 8: 기간 내 예약 3개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (50, 'theme-8-guest-1', '2026-04-29', 1, 8, 'CONFIRMED', '2026-04-29 09:49:00'),
        (51, 'theme-8-guest-2', '2026-04-29', 2, 8, 'WAITING', '2026-04-29 09:50:00'),
        (52, 'theme-8-guest-3', '2026-04-30', 1, 8, 'CONFIRMED', '2026-04-29 09:51:00');
 
 -- Theme 9: 기간 내 예약 2개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (53, 'theme-9-guest-1', '2026-04-29', 1, 9, 'CONFIRMED', '2026-04-29 09:52:00'),
        (54, 'theme-9-guest-2', '2026-04-29', 2, 9, 'WAITING', '2026-04-29 09:53:00');
 
 -- Theme 10: 기간 내 예약 1개
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (55, 'theme-10-guest-1', '2026-04-29', 1, 10, 'CONFIRMED', '2026-04-29 09:54:00');
 
 -- Theme 11: 기간 밖 예약만 있음
-INSERT INTO reservation (id, guest_name, date, time_id, theme_id, status, last_modified_at)
+INSERT INTO reservation (id, guest_name, date, time_id, theme_id, reservation_status, last_modified_at)
 VALUES (56, 'theme-11-out-1', '2026-04-28', 1, 11, 'CONFIRMED', '2026-04-29 09:55:00'),
        (57, 'theme-11-out-2', '2026-05-06', 1, 11, 'WAITING', '2026-04-29 09:56:00'),
        (58, 'theme-11-out-3', '2026-05-06', 2, 11, 'CANCELED', '2026-04-29 09:57:00');

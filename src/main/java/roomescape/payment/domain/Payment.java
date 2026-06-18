@@ -36,4 +36,23 @@ public class Payment {
                 approvedAt
         );
     }
+
+    public static Payment requiresCheck(
+            Long reservationId,
+            String paymentKey,
+            String orderId,
+            Long amount,
+            LocalDateTime requestedAt
+    ) {
+        return new Payment(
+                null,
+                reservationId,
+                paymentKey,
+                orderId,
+                amount,
+                PaymentStatus.REQUIRES_CHECK,
+                requestedAt,
+                null
+        );
+    }
 }

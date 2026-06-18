@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.repository.ReservationRepositoryImpl;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
@@ -68,7 +68,7 @@ class ReservationConcurrencyTest {
         ReservationTime time = sqlFixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
         Theme theme = sqlFixtureGenerator.insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
         LocalDate date = LocalDate.of(2025, 5, 11);
-        sqlFixtureGenerator.insertReservation("제이미", date, time, theme, Status.CONFIRMED);
+        sqlFixtureGenerator.insertReservation("제이미", date, time, theme, ReservationStatus.CONFIRMED);
 
         // when
         executeConcurrently(
@@ -119,7 +119,7 @@ class ReservationConcurrencyTest {
                         WHERE date = :date
                           AND time_id = :timeId
                           AND theme_id = :themeId
-                          AND status = 'WAITING'
+                          AND reservation_status = 'WAITING'
                         """,
                 new MapSqlParameterSource()
                         .addValue("date", Date.valueOf(date))

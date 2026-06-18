@@ -14,4 +14,13 @@ public record PaymentResult(
     LocalDateTime requestedAt
 ) {
 
+    public static PaymentResult requiresCheck(
+            String paymentKey,
+            String orderId,
+            Long amount,
+            LocalDateTime requestedAt
+    ) {
+        return new PaymentResult(paymentKey, orderId, PaymentStatus.REQUIRES_CHECK, amount, null, requestedAt);
+    }
+
 }

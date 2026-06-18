@@ -3,10 +3,13 @@ package roomescape.payment.adapter.in.web;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.common.auth.CurrentUser;
+import roomescape.payment.adapter.in.web.dto.PaymentCheckListResponse;
 import roomescape.payment.adapter.in.web.dto.PaymentConfirmRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentConfirmResponse;
 import roomescape.payment.adapter.in.web.dto.PaymentFailureRequest;
@@ -15,6 +18,7 @@ import roomescape.payment.adapter.in.web.dto.PaymentPrepareRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentPrepareResponse;
 import roomescape.payment.adapter.in.web.dto.PaymentReservationRequest;
 import roomescape.payment.adapter.in.web.dto.PaymentReservationResponse;
+import roomescape.payment.application.port.in.PaymentCheckUseCase;
 import roomescape.payment.application.port.in.PaymentConfirmUseCase;
 import roomescape.payment.application.port.in.PaymentFailureUseCase;
 import roomescape.payment.application.port.in.PaymentPrepareUseCase;
@@ -32,6 +36,7 @@ public class PaymentController {
     private final PaymentReservationUseCase paymentReservationUseCase;
     private final PaymentConfirmUseCase paymentConfirmUseCase;
     private final PaymentFailureUseCase paymentFailureUseCase;
+    private final PaymentCheckUseCase paymentCheckUseCase;
 
     @PostMapping("/reservations")
     public ResponseEntity<PaymentReservationResponse> createReservation(
@@ -58,6 +63,13 @@ public class PaymentController {
                 request.amount()
         );
         return ResponseEntity.ok(PaymentConfirmResponse.from(paymentResult));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<PaymentCheckListResponse> getRequiresCheckPayments(@CurrentUser String guestName) {
+        return ResponseEntity.ok(PaymentCheckListResponse.from(
+                paymentCheckUseCase.findRequiresCheckByGuestName(guestName)
+        ));
     }
 
     @PostMapping("/failures")

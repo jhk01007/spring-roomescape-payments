@@ -1,12 +1,12 @@
 package roomescape.payment.adapter.in.web.dto;
 
 import roomescape.payment.application.port.in.dto.PaymentFailureResult;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 
 public record PaymentFailureResponse(
         String orderId,
         Long reservationId,
-        Status reservationStatus
+        ReservationStatus reservationStatus
 ) {
 
     public static PaymentFailureResponse from(PaymentFailureResult result) {

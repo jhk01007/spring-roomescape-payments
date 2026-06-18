@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.service.dto.ReservationSlotAvailability;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservation.service.validator.ReservationValidator;
@@ -23,9 +23,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static roomescape.reservation.domain.Status.CONFIRMED;
-import static roomescape.reservation.domain.Status.PENDING;
-import static roomescape.reservation.domain.Status.WAITING;
+import static roomescape.reservation.domain.ReservationStatus.CONFIRMED;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.WAITING;
 import static roomescape.reservation.exception.ReservationErrorCode.*;
 import static roomescape.reservation.service.dto.ReservationSlotAvailability.*;
 import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.*;
@@ -93,15 +93,15 @@ public class ReservationService {
 
         ReservationTime changedTime = getReservationTime(changedTimeId);
 
-        Status afterStatus = determineState(beforeReservation, changedDate, changedTimeId);
+        ReservationStatus afterReservationStatus = determineState(beforeReservation, changedDate, changedTimeId);
         LocalDateTime now = LocalDateTime.now(clock);
         Reservation changedReservation = beforeReservation.changeDateTimeAndStatus(
-                changedDate, changedTime, afterStatus, now);
+                changedDate, changedTime, afterReservationStatus, now);
 
         validateEdit(beforeReservation, changedReservation);
 
         updateTopWaitingConfirmed(beforeReservation);
-        beforeReservation.updateDateTimeAndStatus(changedDate, changedTime, afterStatus, now);
+        beforeReservation.updateDateTimeAndStatus(changedDate, changedTime, afterReservationStatus, now);
     }
 
     private void updateTopWaitingConfirmed(Reservation reservation) {
@@ -178,7 +178,7 @@ public class ReservationService {
         reservationValidator.validateEdit(changedReservation);
     }
 
-    private Status determineState(Reservation beforeReservation, LocalDate date, Long timeId) {
+    private ReservationStatus determineState(Reservation beforeReservation, LocalDate date, Long timeId) {
         if (beforeReservation.isPending()) {
             return PENDING;
         }

@@ -192,8 +192,13 @@ async function handlePaymentRedirect() {
   }
 
   try {
-    await postJson("/payments/confirm", { paymentKey, orderId, amount });
+    const result = await postJson("/payments/confirm", { paymentKey, orderId, amount });
     clearStoredPaymentDraft(reservationId);
+    if (result.status === "REQUIRES_CHECK") {
+      showToast("결제 확인이 필요합니다.", "결제 조회에서 결제 승인 재요청을 진행해주세요.");
+      setFormMessage("결제 승인 결과 확인이 필요합니다.", "error");
+      return;
+    }
     showToast("예약이 완료되었습니다.", "결제가 승인되어 예약이 확정되었습니다.");
     setFormMessage("예약이 완료되었습니다.", "ok");
   } catch (error) {

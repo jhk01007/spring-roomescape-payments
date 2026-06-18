@@ -18,7 +18,7 @@ import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_ALREADY_PROCESSED;
-import static roomescape.reservation.domain.Status.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
 
 @ServiceTest
 class PaymentConfirmServiceTest {

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservationtime.domain.ReservationTimeRepository;
@@ -76,7 +76,7 @@ class ThemeServiceTest {
     }
 
     private Reservation insertReservation(String name, LocalDate date, ReservationTime time, Theme theme) {
-        return reservationRepository.save(Reservation.create(name, date, time, theme, Status.WAITING, LocalDateTime.now()));
+        return reservationRepository.save(Reservation.create(name, date, time, theme, ReservationStatus.WAITING, LocalDateTime.now()));
     }
 
     private ReservationTime insertReservationTime(LocalTime startAt) {

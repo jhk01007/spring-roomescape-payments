@@ -10,7 +10,7 @@ public record WaitingReservationResponse(
         String date,
         ReservationTimeResponse time,
         ThemeResponse theme,
-        String status,
+        String reservationStatus,
         long waitNumber
 ) implements ReservationWaitingResponse {
     public static ReservationWaitingResponse from(ReservationWaitingResult reservationWaitingResult) {
@@ -20,7 +20,7 @@ public record WaitingReservationResponse(
                 reservationWaitingResult.date().toString(),
                 ReservationTimeResponse.from(reservationWaitingResult.time()),
                 ThemeResponse.from(reservationWaitingResult.theme()),
-                reservationWaitingResult.status().toString(),
+                reservationWaitingResult.reservationStatus().toString(),
                 reservationWaitingResult.waitNumber()
         );
     }

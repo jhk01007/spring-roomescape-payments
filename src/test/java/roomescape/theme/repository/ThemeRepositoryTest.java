@@ -4,7 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.jdbc.Sql;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.integration.db.repository.RepositoryTest;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
@@ -155,7 +155,7 @@ class ThemeRepositoryTest {
         ReservationTime otherTime = sqlFixtureGenerator.insertReservationTime(LocalTime.of(12, 0));
         LocalDate targetDate = LocalDate.of(2026, 5, 1);
 
-        sqlFixtureGenerator.insertReservation("브라운", targetDate, time, activeTheme, Status.WAITING);
+        sqlFixtureGenerator.insertReservation("브라운", targetDate, time, activeTheme, ReservationStatus.WAITING);
         sqlFixtureGenerator.insertDeletedReservation("포비", targetDate, otherTime, deletedTheme);
 
         // when
@@ -186,8 +186,8 @@ class ThemeRepositoryTest {
         ReservationTime otherTime = sqlFixtureGenerator.insertReservationTime(LocalTime.of(12, 0));
         LocalDate targetDate = LocalDate.of(2026, 5, 1);
 
-        sqlFixtureGenerator.insertReservation("브라운", targetDate, time, activeTheme, Status.WAITING);
-        sqlFixtureGenerator.insertReservation("포비", targetDate, otherTime, deletedTheme, Status.WAITING);
+        sqlFixtureGenerator.insertReservation("브라운", targetDate, time, activeTheme, ReservationStatus.WAITING);
+        sqlFixtureGenerator.insertReservation("포비", targetDate, otherTime, deletedTheme, ReservationStatus.WAITING);
 
         // when
         List<Theme> topThemes = themeRepository.findTopThemesByReservationCount(

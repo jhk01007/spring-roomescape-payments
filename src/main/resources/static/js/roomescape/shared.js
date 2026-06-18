@@ -18,14 +18,28 @@ const state = {
   times: [],
   reservations: [],
   lookupReservations: [],
+  lookupPayments: [],
   demoReservations: [
     { id: 1, guestName: "guest-8", date: "2026-05-05", themeId: 1, timeId: 1, status: "CONFIRMED" },
     { id: 2, guestName: "guest-9", date: "2026-05-05", themeId: 1, timeId: 2, status: "CONFIRMED" },
     { id: 3, guestName: "guest-10", date: "2026-05-05", themeId: 1, timeId: 3, status: "CANCELED" },
     { id: 4, guestName: "guest-18", date: "2027-05-05", themeId: 2, timeId: 1, status: "CONFIRMED" },
     { id: 5, guestName: "guest-19", date: "2027-05-05", themeId: 2, timeId: 2, status: "CONFIRMED" },
-    { id: 6, guestName: "guest-56", date: "2027-05-06", themeId: 11, timeId: 1, status: "CONFIRMED" },
+    { id: 6, guestName: "guest-56", date: "2026-06-28", themeId: 11, timeId: 1, status: "REQUIRES_CHECK" },
     { id: 7, guestName: "guest-57", date: "2027-05-06", themeId: 11, timeId: 2, status: "WAITING", waitNumber: 1 }
+  ],
+  demoPayments: [
+    {
+      reservationId: 6,
+      guestName: "guest-56",
+      date: "2026-06-28",
+      themeId: 11,
+      timeId: 1,
+      status: "REQUIRES_CHECK",
+      paymentKey: "payment-key-guest-56",
+      orderId: "order-guest-56",
+      amount: 50000
+    }
   ],
   selectedThemeId: null,
   selectedTimeId: null,
@@ -120,6 +134,8 @@ const elements = {
   lookupMessage: $("#lookupMessage"),
   lookupList: $("#lookupList"),
   lookupCount: $("#lookupCount"),
+  paymentCheckList: $("#paymentCheckList"),
+  paymentCheckCount: $("#paymentCheckCount"),
   summaryStatus: $("#summaryStatus"),
   paymentPanel: $("#paymentPanel"),
   paymentSummary: $("#paymentSummary"),
@@ -516,7 +532,7 @@ function formatPrice(price) {
 }
 
 function reservationStatus(reservation) {
-  return reservation.status || "CONFIRMED";
+  return reservation.reservationStatus || reservation.status || "CONFIRMED";
 }
 
 function statusLabel(status) {
@@ -525,6 +541,9 @@ function statusLabel(status) {
   }
   if (status === "PENDING") {
     return "결제 대기";
+  }
+  if (status === "REQUIRES_CHECK") {
+    return "확인 필요";
   }
   if (status === "CANCELED") {
     return "취소";
@@ -537,9 +556,11 @@ function statusBadgeHtml(status, waitNumber) {
     ? "waiting"
     : status === "PENDING"
       ? "pending"
-      : status === "CANCELED"
-        ? "canceled"
-        : "confirmed";
+      : status === "REQUIRES_CHECK"
+        ? "requires-check"
+        : status === "CANCELED"
+          ? "canceled"
+          : "confirmed";
   const label = status === "WAITING" && waitNumber
     ? `${statusLabel(status)} ${waitNumber}번`
     : statusLabel(status);
@@ -556,7 +577,7 @@ function isConfirmedReservation(reservation) {
 
 function isOccupyingReservation(reservation) {
   const status = reservationStatus(reservation);
-  return status === "CONFIRMED" || status === "PENDING";
+  return status === "CONFIRMED" || status === "PENDING" || status === "REQUIRES_CHECK";
 }
 
 function clearPaymentDraft() {

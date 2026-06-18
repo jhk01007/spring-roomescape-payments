@@ -65,6 +65,31 @@ public class PaymentCompleteService {
         reservation.confirm();
     }
 
+    @Transactional
+    public void requireCheck(PaymentResult paymentResult) {
+        validateRequiresCheck(paymentResult);
+
+        PaymentSessionInfo paymentSession = paymentSessionRepository.findById(paymentResult.orderId())
+                .orElseThrow(() -> new DomainException(PAYMENT_SESSION_NOT_FOUND));
+        if (!paymentSession.isSameAmount(paymentResult.approvedAmount())) {
+            throw new PaymentAmountMismatchException(paymentSession.amount(), paymentResult.approvedAmount());
+        }
+
+        Reservation reservation = getReservation(paymentSession.reservationId());
+        validatePendingStatus(reservation);
+
+        Payment payment = Payment.requiresCheck(
+                reservation.getId(),
+                paymentResult.paymentKey(),
+                paymentResult.orderId(),
+                paymentResult.approvedAmount(),
+                paymentResult.requestedAt()
+        );
+
+        paymentRepository.save(payment);
+        reservation.requirePaymentCheck();
+    }
+
     private Reservation getReservation(Long reservationId) {
         return reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new DomainException(RESERVATION_NOT_FOUND));
@@ -84,13 +109,19 @@ public class PaymentCompleteService {
         if (reservation.isCanceled()) {
             throw new DomainException(PAYMENT_EXPIRED);
         }
-        if (!reservation.isPending()) {
+        if (!reservation.isPending() && !reservation.isRequiresCheck()) {
             throw new DomainException(PAYMENT_RESERVATION_NOT_PENDING);
         }
     }
 
     private void validateApproved(PaymentResult paymentResult) {
         if (!PaymentStatus.DONE.equals(paymentResult.status())) {
+            throw new DomainException(PAYMENT_CONFIRMATION_NOT_DONE);
+        }
+    }
+
+    private void validateRequiresCheck(PaymentResult paymentResult) {
+        if (!PaymentStatus.REQUIRES_CHECK.equals(paymentResult.status())) {
             throw new DomainException(PAYMENT_CONFIRMATION_NOT_DONE);
         }
     }

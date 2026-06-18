@@ -546,6 +546,11 @@
       scrollbar-width: thin;
     }
 
+    .payment-check-head {
+      margin-top: 22px;
+      margin-bottom: 10px;
+    }
+
     .reservation-edit-form {
       border-top: 1px solid var(--line);
       padding-top: 14px;
@@ -1104,6 +1109,11 @@
     .status-badge.pending {
       background: #eaf1ff;
       color: #2557a7;
+    }
+
+    .status-badge.requires-check {
+      background: #fff7d6;
+      color: #806200;
     }
 
     .status-badge.canceled {

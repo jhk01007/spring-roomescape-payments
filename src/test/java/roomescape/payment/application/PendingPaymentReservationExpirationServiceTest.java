@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.payment.application.service.PendingPaymentReservationExpirationService;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.clock.MutableClock;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
@@ -18,9 +19,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static roomescape.reservation.domain.Status.CANCELED;
-import static roomescape.reservation.domain.Status.CONFIRMED;
-import static roomescape.reservation.domain.Status.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.CANCELED;
+import static roomescape.reservation.domain.ReservationStatus.CONFIRMED;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
 
 @ServiceTest
 class PendingPaymentReservationExpirationServiceTest {
@@ -59,15 +60,15 @@ class PendingPaymentReservationExpirationServiceTest {
         entityManager.clear();
 
         assertThat(expiredCount).isEqualTo(1);
-        assertThat(reservationRepository.findById(expiredPending.getId()).get().getStatus()).isEqualTo(CANCELED);
-        assertThat(reservationRepository.findById(recentPending.getId()).get().getStatus()).isEqualTo(PENDING);
-        assertThat(reservationRepository.findById(oldConfirmed.getId()).get().getStatus()).isEqualTo(CONFIRMED);
+        assertThat(reservationRepository.findById(expiredPending.getId()).get().getReservationStatus()).isEqualTo(CANCELED);
+        assertThat(reservationRepository.findById(recentPending.getId()).get().getReservationStatus()).isEqualTo(PENDING);
+        assertThat(reservationRepository.findById(oldConfirmed.getId()).get().getReservationStatus()).isEqualTo(CONFIRMED);
     }
 
     private Reservation insertReservation(
             String guestName,
             LocalTime startAt,
-            roomescape.reservation.domain.Status status,
+            ReservationStatus reservationStatus,
             LocalDateTime lastModifiedAt,
             LocalDateTime paymentExpiresAt
     ) {
@@ -83,7 +84,7 @@ class PendingPaymentReservationExpirationServiceTest {
                 LocalDate.of(2025, 5, 2),
                 time,
                 theme,
-                status,
+                reservationStatus,
                 lastModifiedAt,
                 paymentExpiresAt
         );

@@ -10,7 +10,7 @@ public record ConfirmedReservationResponse(
         String date,
         ReservationTimeResponse time,
         ThemeResponse theme,
-        String status
+        String reservationStatus
 ) implements ReservationWaitingResponse {
 
     public static ConfirmedReservationResponse from(ReservationWaitingResult reservationWaitingResult) {
@@ -20,7 +20,7 @@ public record ConfirmedReservationResponse(
                 reservationWaitingResult.date().toString(),
                 ReservationTimeResponse.from(reservationWaitingResult.time()),
                 ThemeResponse.from(reservationWaitingResult.theme()),
-                reservationWaitingResult.status().toString()
+                reservationWaitingResult.reservationStatus().toString()
         );
     }
 }

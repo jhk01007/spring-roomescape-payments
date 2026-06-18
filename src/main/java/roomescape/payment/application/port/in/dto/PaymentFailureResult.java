@@ -1,10 +1,10 @@
 package roomescape.payment.application.port.in.dto;
 
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 
 public record PaymentFailureResult(
         String orderId,
         Long reservationId,
-        Status reservationStatus
+        ReservationStatus reservationStatus
 ) {
 }

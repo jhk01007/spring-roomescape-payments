@@ -22,15 +22,15 @@
           <a id="userTab" class="view-button" th:classappend="${activePage == 'user'} ? 'active' : ''" th:href="@{/}" href="/">사용자</a>
           <a id="adminTab" class="view-button" th:classappend="${activePage == 'admin'} ? 'active' : ''" th:href="@{/admin}" href="/admin">관리자</a>
         </nav>
-        <div id="sourceStatus" class="status-pill">
-          <span class="status-dot"></span>
+        <div id="sourceStatus" class="reservationStatus-pill">
+          <span class="reservationStatus-dot"></span>
           <span>데이터 불러오는 중</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div id="toast" class="toast" role="status" aria-live="polite" th:fragment="toast"></div>
+  <div id="toast" class="toast" role="reservationStatus" aria-live="polite" th:fragment="toast"></div>
 
   <div id="errorPopup" class="message-popup" role="alertdialog" aria-modal="true" aria-labelledby="errorPopupTitle" aria-describedby="errorPopupMessage" hidden th:fragment="error-popup">
     <div class="message-popup-panel">

@@ -40,7 +40,7 @@ public interface JpaThemeRepository extends JpaRepository<Theme, Long> {
             FROM theme t
             INNER JOIN reservation r
                 ON r.theme_id = t.id
-                AND r.status != 'CANCELED'
+                AND r.reservation_status != 'CANCELED'
             WHERE r.date BETWEEN :startDate AND :endDate
                 AND t.deleted_at IS NULL
             GROUP BY t.id, t.name, t.description, t.thumbnail, t.price, t.deleted_at

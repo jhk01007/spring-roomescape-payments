@@ -139,7 +139,7 @@ public final class ReservationAcceptanceSteps {
         return new ReservationInfo(
                 reservationId,
                 request,
-                response.jsonPath().getString("status"),
+                response.jsonPath().getString("reservationStatus"),
                 response.jsonPath().get("waitNumber")
         );
     }
@@ -228,7 +228,7 @@ public final class ReservationAcceptanceSteps {
             String status
     ) {
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(예약_목록에서_예약을_찾는다(response, reservation).get("status")).isEqualTo(status);
+        assertThat(예약_목록에서_예약을_찾는다(response, reservation).get("reservationStatus")).isEqualTo(status);
     }
 
     public static void 내_예약_목록에서_대기_순번을_응답받는다(

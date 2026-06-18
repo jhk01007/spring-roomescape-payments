@@ -11,7 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import roomescape.reservation.controller.dto.*;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.service.dto.ReservationSlotAvailability;
 import roomescape.reservation.service.dto.ReservationWaitingResult;
 import roomescape.reservationtime.controller.dto.ReservationTimeResponse;
@@ -64,7 +64,7 @@ class ReservationControllerTest {
         ReservationTime time = ReservationTime.of(1L, LocalTime.of(10, 0));
         Theme theme = Theme.of(1L, "레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme-1.png");
         ReservationWaitingResult reservationWaitingResult =
-                new ReservationWaitingResult(1L, "브라운", LocalDate.of(2023, 8, 5), time, theme, Status.WAITING, 1);
+                new ReservationWaitingResult(1L, "브라운", LocalDate.of(2023, 8, 5), time, theme, ReservationStatus.WAITING, 1);
 
         given(reservationService.createWaiting(anyString(), any(), anyLong(), anyLong()))
                 .willReturn(reservationWaitingResult);
@@ -105,13 +105,13 @@ class ReservationControllerTest {
                 ReservationWaitingResponse::id,
                 ReservationWaitingResponse::guestName,
                 ReservationWaitingResponse::date,
-                ReservationWaitingResponse::status,
+                ReservationWaitingResponse::reservationStatus,
                 WaitingReservationResponse::waitNumber
         ).containsExactly(
                 reservationWaitingResult.id(),
                 reservationWaitingResult.guestName(),
                 reservationWaitingResult.date().toString(),
-                reservationWaitingResult.status().toString(),
+                reservationWaitingResult.reservationStatus().toString(),
                 reservationWaitingResult.waitNumber()
         );
     }
@@ -224,11 +224,11 @@ class ReservationControllerTest {
         ReservationTime time = ReservationTime.of(1L, LocalTime.of(10, 0));
         Theme theme = Theme.of(1L, "레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme-1.png");
         ReservationWaitingResult confirmed =
-                new ReservationWaitingResult(1L, guestName, LocalDate.of(2023, 8, 5), time, theme, Status.CONFIRMED, 0);
+                new ReservationWaitingResult(1L, guestName, LocalDate.of(2023, 8, 5), time, theme, ReservationStatus.CONFIRMED, 0);
         ReservationWaitingResult waiting =
-                new ReservationWaitingResult(1L, guestName, LocalDate.of(2023, 8, 5), time, theme, Status.WAITING, 5);
+                new ReservationWaitingResult(1L, guestName, LocalDate.of(2023, 8, 5), time, theme, ReservationStatus.WAITING, 5);
         ReservationWaitingResult canceled =
-                new ReservationWaitingResult(1L, guestName, LocalDate.of(2023, 8, 5), time, theme, Status.CANCELED, 0);
+                new ReservationWaitingResult(1L, guestName, LocalDate.of(2023, 8, 5), time, theme, ReservationStatus.CANCELED, 0);
         given(reservationService.findByGuestName(guestName))
                 .willReturn(List.of(confirmed, waiting, canceled));
 
@@ -258,7 +258,7 @@ class ReservationControllerTest {
         assertThat(response.get("date").asText()).isEqualTo(reservationWaitingResult.date().toString());
         assertTime(response.get("time"), reservationWaitingResult.time());
         assertTheme(response.get("theme"), reservationWaitingResult.theme());
-        assertThat(response.get("status").asText()).isEqualTo(reservationWaitingResult.status().toString());
+        assertThat(response.get("reservationStatus").asText()).isEqualTo(reservationWaitingResult.reservationStatus().toString());
     }
     private static void assertWaitingReservation(JsonNode response, ReservationWaitingResult reservationWaitingResult) {
         assertThat(response.get("id").asLong()).isEqualTo(reservationWaitingResult.id());
@@ -266,7 +266,7 @@ class ReservationControllerTest {
         assertThat(response.get("date").asText()).isEqualTo(reservationWaitingResult.date().toString());
         assertTime(response.get("time"), reservationWaitingResult.time());
         assertTheme(response.get("theme"), reservationWaitingResult.theme());
-        assertThat(response.get("status").asText()).isEqualTo(reservationWaitingResult.status().toString());
+        assertThat(response.get("reservationStatus").asText()).isEqualTo(reservationWaitingResult.reservationStatus().toString());
         assertThat(response.get("waitNumber").asLong()).isEqualTo(reservationWaitingResult.waitNumber());
     }
 

@@ -19,7 +19,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static roomescape.reservation.domain.Status.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
 import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.RESERVATION_TIME_NOT_FOUND;
 import static roomescape.theme.exception.ThemeErrorCode.THEME_NOT_FOUND;
 

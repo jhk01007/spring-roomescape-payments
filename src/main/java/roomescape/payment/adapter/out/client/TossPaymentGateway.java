@@ -35,21 +35,31 @@ public class TossPaymentGateway implements PaymentGateway {
     @Override
     @RetryablePayment(retryOn = TossPaymentException.Retryable.class)
     public PaymentResult confirm(PaymentConfirmation confirmation) {
-        ConfirmRequest confirmRequest = new ConfirmRequest(confirmation.paymentKey(), confirmation.orderId(), confirmation.amount());
-        TossPaymentResponse tossPaymentResponse = tossRestClient.post()
-                .uri("/v1/payments/confirm")
-                .body(confirmRequest)
-                .contentType(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .onStatus(
-                        HttpStatusCode::isError,
-                        (request, response) -> {
-                            TossErrorResponse error = objectMapper.readValue(response.getBody(), TossErrorResponse.class);
-                            throw TossPaymentException.of(response.getStatusCode(), error);
-                        }
-                )
-                .body(TossPaymentResponse.class);
-        return toResult(tossPaymentResponse);
+        try {
+            ConfirmRequest confirmRequest = new ConfirmRequest(confirmation.paymentKey(), confirmation.orderId(), confirmation.amount());
+            TossPaymentResponse tossPaymentResponse = tossRestClient.post()
+                    .uri("/v1/payments/confirm")
+                    .header("Idempotency-Key", confirmation.orderId())
+                    .body(confirmRequest)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .onStatus(
+                            HttpStatusCode::isError,
+                            (request, response) -> {
+                                TossErrorResponse error = objectMapper.readValue(response.getBody(), TossErrorResponse.class);
+                                throw TossPaymentException.of(response.getStatusCode(), error);
+                            }
+                    )
+                    .body(TossPaymentResponse.class);
+            return toResult(tossPaymentResponse);
+        } catch (RestClientException exception) {
+            return PaymentResult.requiresCheck(
+                    confirmation.paymentKey(),
+                    confirmation.orderId(),
+                    confirmation.amount(),
+                    LocalDateTime.now()
+            );
+        }
     }
 
     private static PaymentResult toResult(TossPaymentResponse tossPaymentResponse) {

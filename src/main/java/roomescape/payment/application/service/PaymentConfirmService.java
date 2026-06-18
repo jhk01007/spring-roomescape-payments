@@ -10,6 +10,7 @@ import roomescape.payment.application.port.out.PaymentSessionInfo;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
 import roomescape.payment.domain.PaymentConfirmation;
 import roomescape.payment.domain.PaymentResult;
+import roomescape.payment.domain.PaymentStatus;
 import roomescape.payment.domain.exception.PaymentAmountMismatchException;
 
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_ALREADY_PROCESSED;
@@ -28,20 +29,24 @@ public class PaymentConfirmService implements PaymentConfirmUseCase {
     private final PaymentCompleteService paymentCompleteService;
 
     public PaymentResult confirm(String paymentKey, String orderId, Long amount) {
-//        validateAlreadyPaymentConfirmed(paymentKey);
+        validateAlreadyPaymentConfirmed(paymentKey);
         PaymentSessionInfo paymentSession = getPaymentSession(orderId);
         validateAmount(amount, paymentSession);
         paymentCompleteService.validateCompletable(paymentSession.reservationId());
 
         PaymentConfirmation confirmation = new PaymentConfirmation(paymentKey, orderId, amount);
         PaymentResult paymentResult = paymentGateway.confirm(confirmation);
+        if (PaymentStatus.REQUIRES_CHECK.equals(paymentResult.status())) {
+            paymentCompleteService.requireCheck(paymentResult);
+            return paymentResult;
+        }
         paymentCompleteService.complete(paymentResult);
 
         return paymentResult;
     }
 
     private void validateAlreadyPaymentConfirmed(String paymentKey) {
-        if (paymentRepository.existsByPaymentKey(paymentKey)) {
+        if (paymentRepository.existsByPaymentKeyAndStatus(paymentKey, PaymentStatus.DONE)) {
             throw new DomainException(PAYMENT_ALREADY_PROCESSED);
         }
     }

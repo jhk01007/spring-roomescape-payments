@@ -281,7 +281,7 @@ Content-Type: application/json
     "description": "우테코 레벨2를 탈출하는 내용입니다.",
     "thumbnail": "https://i.pinimg.com/236x/6e/bc/46/6ebc461a94a49f9ea3b8bbe2204145d4.jpg"
   },
-  "status": "WAITED",
+  "reservationStatus": "WAITED",
   "waitNumber": 5
 }
 ```
@@ -326,7 +326,7 @@ Content-Type: application/json
         "description": "우테코 레벨2를 탈출하는 내용입니다.",
         "thumbnail": "https://i.pinimg.com/236x/6e/bc/46/6ebc461a94a49f9ea3b8bbe2204145d4.jpg"
       },
-        "status": 'WAITED',
+        "reservationStatus": 'WAITED',
         "waitNumber": 5
     }
   ]

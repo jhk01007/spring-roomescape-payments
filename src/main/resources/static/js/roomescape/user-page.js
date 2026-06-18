@@ -455,6 +455,10 @@ function renderLookupReservations(reservations) {
       const waitNumber = reservation.waitNumber;
       const disabledActions = status === "CANCELED";
       const canPay = status === "PENDING";
+      const requiresPaymentCheck = status === "REQUIRES_CHECK";
+      const paymentCheckHint = requiresPaymentCheck
+        ? `<span class="list-meta">결제 확인 필요 목록에서 승인 결과를 다시 확인해주세요.</span>`
+        : "";
       const row = document.createElement("div");
       row.className = `list-row reservation-row ${status.toLowerCase()}`;
       row.innerHTML = `
@@ -464,9 +468,11 @@ function renderLookupReservations(reservations) {
             ${statusBadgeHtml(status, waitNumber)}
           </span>
           <span class="list-meta">${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(theme?.name || "-")} · ${escapeHtml(normalizeTime(time?.startAt || "-"))}</span>
+          ${paymentCheckHint}
         </div>
         <div class="row-actions">
           ${canPay ? `<button class="primary-button compact-button" type="button" data-pay-reservation-id="${reservation.id}">결제하기</button>` : ""}
+          ${requiresPaymentCheck ? `<button class="secondary-button compact-button" type="button" data-show-payment-check>결제 정보 보기</button>` : ""}
           ${disabledActions ? "" : `<button class="secondary-button compact-button" type="button" data-edit-reservation-id="${reservation.id}">수정</button>`}
           ${disabledActions ? "" : `<button class="danger-button compact-button" type="button" data-cancel-reservation-id="${reservation.id}">취소</button>`}
         </div>
@@ -475,12 +481,70 @@ function renderLookupReservations(reservations) {
     });
 }
 
+function renderLookupPayments(payments) {
+  state.lookupPayments = payments;
+  if (!elements.paymentCheckList || !elements.paymentCheckCount) {
+    return;
+  }
+
+  elements.paymentCheckList.innerHTML = "";
+  elements.paymentCheckCount.textContent = `${payments.length}건`;
+
+  if (payments.length === 0) {
+    elements.paymentCheckList.innerHTML = `<div class="empty">확인이 필요한 결제가 없습니다.</div>`;
+    return;
+  }
+
+  [...payments]
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.reservationId) - Number(a.reservationId))
+    .forEach((payment) => {
+      const theme = getReservationTheme(payment);
+      const time = getReservationTime(payment);
+      const row = document.createElement("div");
+      row.className = "list-row reservation-row requires_check";
+      row.innerHTML = `
+        <div class="list-main">
+          <span class="list-title">
+            ${escapeHtml(payment.guestName || "예약자")}
+            ${statusBadgeHtml(payment.status, 0)}
+          </span>
+          <span class="list-meta">${escapeHtml(formatDate(payment.date))} · ${escapeHtml(theme?.name || "-")} · ${escapeHtml(normalizeTime(time?.startAt || "-"))}</span>
+          <span class="list-meta">주문 ${escapeHtml(payment.orderId || "-")} · 결제키 ${escapeHtml(payment.paymentKey || "-")} · ${escapeHtml(formatPrice(payment.amount))}</span>
+        </div>
+        <div class="row-actions">
+          <button class="primary-button compact-button" type="button" data-retry-payment-id="${payment.reservationId}">결제 승인 재요청</button>
+        </div>
+      `;
+      elements.paymentCheckList.appendChild(row);
+    });
+}
+
+async function fetchLookupData(guestName) {
+  if (state.mode !== "live") {
+    return {
+      reservations: state.demoReservations.filter((reservation) => reservation.guestName === guestName),
+      payments: state.demoPayments.filter((payment) => payment.guestName === guestName)
+    };
+  }
+
+  const [reservationData, paymentData] = await Promise.all([
+    getJson("/reservations/me", guestNameHeaders(guestName)),
+    getJson("/payments/me", guestNameHeaders(guestName))
+  ]);
+
+  return {
+    reservations: reservationData.reservations || [],
+    payments: paymentData.payments || []
+  };
+}
+
 async function lookupReservations(event) {
   event.preventDefault();
   const guestName = elements.lookupGuestName.value.trim();
   if (!guestName) {
     setLookupMessage("예약자 이름을 입력해주세요.", "error");
     renderLookupReservations([]);
+    renderLookupPayments([]);
     clearEditReservation();
     clearCancelReservation();
     return;
@@ -492,19 +556,59 @@ async function lookupReservations(event) {
   clearCancelReservation();
 
   try {
-    const reservations = state.mode === "live"
-      ? (await getJson("/reservations/me", guestNameHeaders(guestName))).reservations || []
-      : state.demoReservations.filter((reservation) => reservation.guestName === guestName);
+    const { reservations, payments } = await fetchLookupData(guestName);
 
     renderLookupReservations(reservations);
-    setLookupMessage(reservations.length === 0 ? "조회된 예약이 없습니다." : "예약 조회가 완료되었습니다.",
-      reservations.length === 0 ? "" : "ok");
+    renderLookupPayments(payments);
+    const totalCount = reservations.length + payments.length;
+    setLookupMessage(totalCount === 0 ? "조회된 예약과 결제가 없습니다." : "예약과 결제 조회가 완료되었습니다.",
+      totalCount === 0 ? "" : "ok");
   } catch (error) {
     renderLookupReservations([]);
-    setLookupMessage(endpointMessageOr(error, "예약 조회에 실패했습니다."), "error");
+    renderLookupPayments([]);
+    setLookupMessage(endpointMessageOr(error, "예약과 결제 조회에 실패했습니다."), "error");
   } finally {
     elements.lookupButton.disabled = false;
   }
+}
+
+async function retryPaymentConfirmation(reservationId) {
+  const payment = state.lookupPayments.find((item) => Number(item.reservationId) === reservationId);
+  if (!payment?.paymentKey || !payment?.orderId || !payment?.amount) {
+    setLookupMessage("결제 승인 재요청에 필요한 정보가 없습니다.", "error");
+    return;
+  }
+
+  setLookupMessage("결제 승인 결과를 다시 확인하는 중입니다.");
+  try {
+    const result = await postJson("/payments/confirm", {
+      paymentKey: payment.paymentKey,
+      orderId: payment.orderId,
+      amount: payment.amount
+    });
+    const guestName = elements.lookupGuestName.value.trim();
+    if (guestName) {
+      const { reservations, payments } = await fetchLookupData(guestName);
+      renderLookupReservations(reservations);
+      renderLookupPayments(payments);
+    }
+    if (result.status === "REQUIRES_CHECK") {
+      setLookupMessage("아직 결제 승인 결과 확인이 필요합니다. 잠시 후 다시 시도해주세요.", "error");
+      return;
+    }
+    showToast("예약이 완료되었습니다.", "결제가 승인되어 예약이 확정되었습니다.");
+    setLookupMessage("결제 승인 재요청이 완료되었습니다.", "ok");
+  } catch (error) {
+    setLookupMessage(endpointMessageOr(error, "결제 승인 재요청에 실패했습니다."), "error");
+  }
+}
+
+function moveToPaymentCheckList() {
+  if (!elements.paymentCheckList) {
+    return;
+  }
+  elements.paymentCheckList.scrollIntoView({ behavior: "smooth", block: "start" });
+  setLookupMessage("결제 확인 필요 목록에서 결제 승인 재요청을 진행해주세요.", "ok");
 }
 
 function renderEditTimeOptions(times, selectedTimeId = null) {
@@ -584,9 +688,12 @@ async function submitCancelReservation(event) {
 
   try {
     let reservations = [];
+    let payments = [];
     if (state.mode === "live") {
       await deleteJson(`/reservations/${reservationId}`, guestNameHeaders(authorizationName));
-      reservations = (await getJson("/reservations/me", guestNameHeaders(authorizationName))).reservations || [];
+      const lookupData = await fetchLookupData(authorizationName);
+      reservations = lookupData.reservations;
+      payments = lookupData.payments;
     } else {
       cancelDemoReservation(reservationId, authorizationName);
       reservations = state.demoReservations.filter((reservation) => reservation.guestName === authorizationName);
@@ -594,6 +701,7 @@ async function submitCancelReservation(event) {
 
     state.lookupReservations = reservations;
     renderLookupReservations(state.lookupReservations);
+    renderLookupPayments(payments);
     clearCancelReservation();
     showToast("예약이 취소되었습니다.", authorizationName);
     renderTimes();
@@ -624,10 +732,13 @@ async function editReservation(event) {
 
   try {
     let reservations = [];
+    let payments = [];
     let editedReservation = null;
     if (state.mode === "live") {
       await patchJson(`/reservations/${reservationId}`, payload, guestNameHeaders(authorizationName));
-      reservations = (await getJson("/reservations/me", guestNameHeaders(authorizationName))).reservations || [];
+      const lookupData = await fetchLookupData(authorizationName);
+      reservations = lookupData.reservations;
+      payments = lookupData.payments;
       editedReservation = reservations.find((reservation) => reservation.id === reservationId) || null;
     } else {
       editedReservation = editDemoReservation(reservationId, payload, authorizationName);
@@ -640,6 +751,7 @@ async function editReservation(event) {
     state.lookupReservations = reservations;
 
     renderLookupReservations(state.lookupReservations);
+    renderLookupPayments(payments);
     clearEditReservation();
     showToast("예약이 수정되었습니다.", `${formatDate(payload.date)} · ${normalizeTime(getReservationTime(editedReservation || { timeId: payload.timeId })?.startAt || "")}`);
     renderTimes();
@@ -665,6 +777,7 @@ function renderUserDemoFirst() {
   renderTimes();
   syncSummary();
   renderLookupReservations([]);
+  renderLookupPayments([]);
 }
 
 async function loadUserInitialData() {
@@ -698,6 +811,7 @@ async function loadUserInitialData() {
     renderTimes();
     syncSummary();
     renderLookupReservations([]);
+    renderLookupPayments([]);
   } catch (error) {
     renderUserDemoFirst();
     setSourceStatus();
@@ -721,6 +835,12 @@ function bindUserEvents() {
       return;
     }
 
+    const showPaymentCheckButton = event.target.closest("[data-show-payment-check]");
+    if (showPaymentCheckButton) {
+      moveToPaymentCheckList();
+      return;
+    }
+
     const editButton = event.target.closest("[data-edit-reservation-id]");
     if (editButton) {
       startEditReservation(Number(editButton.dataset.editReservationId));
@@ -730,6 +850,12 @@ function bindUserEvents() {
     const cancelButton = event.target.closest("[data-cancel-reservation-id]");
     if (cancelButton) {
       startCancelReservation(Number(cancelButton.dataset.cancelReservationId));
+    }
+  });
+  elements.paymentCheckList.addEventListener("click", (event) => {
+    const retryPaymentButton = event.target.closest("[data-retry-payment-id]");
+    if (retryPaymentButton) {
+      retryPaymentConfirmation(Number(retryPaymentButton.dataset.retryPaymentId));
     }
   });
   elements.editReservationForm.addEventListener("submit", editReservation);

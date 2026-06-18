@@ -10,6 +10,7 @@ import roomescape.payment.application.port.out.PaymentSessionRepository;
 import roomescape.payment.application.service.PaymentFailureService;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
 import roomescape.test_config.integration.db.service.ServiceTest;
@@ -21,9 +22,9 @@ import java.time.LocalTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_FAILURE_NOT_ALLOWED;
-import static roomescape.reservation.domain.Status.CANCELED;
-import static roomescape.reservation.domain.Status.CONFIRMED;
-import static roomescape.reservation.domain.Status.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.CANCELED;
+import static roomescape.reservation.domain.ReservationStatus.CONFIRMED;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
 
 @ServiceTest
 class PaymentFailureServiceTest {
@@ -60,7 +61,7 @@ class PaymentFailureServiceTest {
         entityManager.clear();
 
         Reservation updatedReservation = reservationRepository.findById(reservation.getId()).get();
-        assertThat(updatedReservation.getStatus()).isEqualTo(CANCELED);
+        assertThat(updatedReservation.getReservationStatus()).isEqualTo(CANCELED);
         assertThat(result.orderId()).isEqualTo("order-1");
         assertThat(result.reservationId()).isEqualTo(reservation.getId());
         assertThat(result.reservationStatus()).isEqualTo(CANCELED);
@@ -79,7 +80,7 @@ class PaymentFailureServiceTest {
                 .hasMessage(PAYMENT_FAILURE_NOT_ALLOWED.message());
     }
 
-    private Reservation insertReservation(roomescape.reservation.domain.Status status) {
+    private Reservation insertReservation(ReservationStatus reservationStatus) {
         ReservationTime time = fixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
         Theme theme = fixtureGenerator.insertTheme(
                 "레벨2 탈출",
@@ -87,6 +88,6 @@ class PaymentFailureServiceTest {
                 "https://example.com/theme.png",
                 AMOUNT
         );
-        return fixtureGenerator.insertReservation("브라운", LocalDate.of(2025, 5, 2), time, theme, status);
+        return fixtureGenerator.insertReservation("브라운", LocalDate.of(2025, 5, 2), time, theme, reservationStatus);
     }
 }

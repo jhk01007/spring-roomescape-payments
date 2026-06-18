@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static roomescape.reservation.domain.Status.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
 
 @ServiceTest
 class PaymentReservationServiceTest {
@@ -69,7 +69,7 @@ class PaymentReservationServiceTest {
         entityManager.clear();
 
         Reservation reservation = reservationRepository.findById(result.reservationId()).get();
-        assertThat(reservation.getStatus()).isEqualTo(PENDING);
+        assertThat(reservation.getReservationStatus()).isEqualTo(PENDING);
         assertThat(reservation.getLastModifiedAt()).isEqualTo(now);
         assertThat(reservation.getPaymentExpiresAt()).isEqualTo(now.plusMinutes(10));
         assertThat(result.amount()).isEqualTo(theme.getPrice());

@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.common.exception.DomainException;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.domain.ReservationRepository;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.reservation.service.dto.ReservationSlotAvailability;
@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.*;
-import static roomescape.reservation.domain.Status.*;
+import static roomescape.reservation.domain.ReservationStatus.*;
 import static roomescape.reservation.exception.ReservationErrorCode.*;
 import static roomescape.reservationtime.exeption.ReservationTimeErrorCode.*;
 
@@ -85,7 +85,7 @@ class ReservationServiceTest {
                 reservationService.createWaiting("브라운", date, time.getId(), theme.getId());
 
         // then
-        assertThat(reservationWaitingResult.status()).isEqualTo(Status.WAITING);
+        assertThat(reservationWaitingResult.reservationStatus()).isEqualTo(ReservationStatus.WAITING);
     }
 
     @Test
@@ -104,18 +104,18 @@ class ReservationServiceTest {
                 reservationService.createWaiting("브라운", date, time.getId(), theme.getId());
 
         // then
-        assertThat(reservationWaitingResult.status()).isEqualTo(Status.WAITING);
+        assertThat(reservationWaitingResult.reservationStatus()).isEqualTo(ReservationStatus.WAITING);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"CONFIRMED", "PENDING"})
     @DisplayName("이미 해당 슬롯에 해당 사용자가 예약한적이 있으면 예외가 발생한다.")
-    public void createWaiting_fail_duplicated(Status status) {
+    public void createWaiting_fail_duplicated(ReservationStatus reservationStatus) {
         // given
         ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
         Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
         LocalDate date = LocalDate.of(2025, 5, 11);
-        insertReservation("포비", date, time, theme, status);
+        insertReservation("포비", date, time, theme, reservationStatus);
 
         clock.setFixed(date);
 
@@ -163,13 +163,13 @@ class ReservationServiceTest {
     @ParameterizedTest
     @ValueSource(strings = {"CONFIRMED", "PENDING"})
     @DisplayName("확정 또는 결제 대기 예약이 있는 미래 슬롯은 대기 가능 상태로 조회된다.")
-    public void findSlotAvailability_waiting(Status status) {
+    public void findSlotAvailability_waiting(ReservationStatus reservationStatus) {
         // given
         ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
         Theme theme = insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
         LocalDate date = LocalDate.of(2025, 5, 11);
 
-        insertReservation("포비", date, time, theme, status);
+        insertReservation("포비", date, time, theme, reservationStatus);
         clock.setFixed(LocalDate.of(2025, 5, 10));
 
         // when
@@ -237,7 +237,7 @@ class ReservationServiceTest {
 
         // then
         Reservation updatedWaiting = reservationRepository.findById(waiting1.getId()).get();
-        assertThat(updatedWaiting.getStatus()).isEqualTo(PENDING);
+        assertThat(updatedWaiting.getReservationStatus()).isEqualTo(PENDING);
         assertThat(updatedWaiting.getLastModifiedAt()).isEqualTo(now);
         assertThat(updatedWaiting.getPaymentExpiresAt()).isEqualTo(now.plusHours(1));
     }
@@ -300,7 +300,7 @@ class ReservationServiceTest {
         reservationService.cancelMine(reservation.getId(), reservation.getGuestName());
 
         // then
-        assertThat(reservationRepository.findById(reservation.getId()).get().getStatus()).isEqualTo(Status.CANCELED);
+        assertThat(reservationRepository.findById(reservation.getId()).get().getReservationStatus()).isEqualTo(ReservationStatus.CANCELED);
     }
 
     @Test
@@ -322,7 +322,7 @@ class ReservationServiceTest {
 
         // then
         Reservation updatedWaiting = reservationRepository.findById(waiting1.getId()).get();
-        assertThat(updatedWaiting.getStatus()).isEqualTo(PENDING);
+        assertThat(updatedWaiting.getReservationStatus()).isEqualTo(PENDING);
         assertThat(updatedWaiting.getLastModifiedAt()).isEqualTo(now);
         assertThat(updatedWaiting.getPaymentExpiresAt()).isEqualTo(now.plusHours(1));
     }
@@ -432,7 +432,7 @@ class ReservationServiceTest {
 
         // then
         Reservation updated = reservationRepository.findById(reservation.getId()).get();
-        assertThat(updated.getStatus()).isEqualTo(PENDING);
+        assertThat(updated.getReservationStatus()).isEqualTo(PENDING);
     }
 
     @Test
@@ -477,7 +477,7 @@ class ReservationServiceTest {
 
         // then
         Reservation updatedWaiting = reservationRepository.findById(waiting1.getId()).get();
-        assertThat(updatedWaiting.getStatus()).isEqualTo(CONFIRMED);
+        assertThat(updatedWaiting.getReservationStatus()).isEqualTo(CONFIRMED);
     }
 
     @Test
@@ -500,8 +500,8 @@ class ReservationServiceTest {
         reservationService.editDateTime(reservation.getId(), editedDate, editedTime.getId(), "포비");
 
         // then
-        assertThat(reservationRepository.findById(reservation.getId()).get().getStatus())
-                .isEqualTo(Status.WAITING);
+        assertThat(reservationRepository.findById(reservation.getId()).get().getReservationStatus())
+                .isEqualTo(ReservationStatus.WAITING);
     }
 
     @Test
@@ -588,7 +588,7 @@ class ReservationServiceTest {
         LocalDate date = LocalDate.of(2023, 8, 10);
         ReservationTime time = insertReservationTime(LocalTime.of(10, 0));
 
-        Reservation reservation = insertReservation("브라운", date, time, theme, Status.CONFIRMED);
+        Reservation reservation = insertReservation("브라운", date, time, theme, ReservationStatus.CONFIRMED);
 
         // when then
         assertThatThrownBy(() -> reservationService.editDateTime(reservation.getId(), date, time.getId(), reservation.getGuestName()))
@@ -608,9 +608,9 @@ class ReservationServiceTest {
         LocalDate targetDate = LocalDate.of(2023, 8, 10);
         LocalDate originDate = LocalDate.of(2023, 8, 11);
 
-        insertReservation("브라운", targetDate, targetTime, theme, Status.CONFIRMED);
-        insertReservation("포비", targetDate, targetTime, theme, Status.WAITING);
-        Reservation reservation = insertReservation("초코칩", originDate, originTime, theme, Status.CONFIRMED);
+        insertReservation("브라운", targetDate, targetTime, theme, ReservationStatus.CONFIRMED);
+        insertReservation("포비", targetDate, targetTime, theme, ReservationStatus.WAITING);
+        Reservation reservation = insertReservation("초코칩", originDate, originTime, theme, ReservationStatus.CONFIRMED);
 
         clock.setFixed(LocalDateTime.of(2023, 7, 6, 11, 0));
 
@@ -619,7 +619,7 @@ class ReservationServiceTest {
 
         // then
         ReservationWaitingResult result = reservationService.findByGuestName("초코칩").getFirst();
-        assertThat(result.status()).isEqualTo(Status.WAITING);
+        assertThat(result.reservationStatus()).isEqualTo(ReservationStatus.WAITING);
         assertThat(result.waitNumber()).isEqualTo(2);
     }
 
@@ -673,7 +673,7 @@ class ReservationServiceTest {
         return themeRepository.save(Theme.create(name, description, thumbnail));
     }
 
-    private Reservation insertReservation(String name, LocalDate date, ReservationTime time, Theme theme, Status status) {
-        return reservationRepository.save(Reservation.create(name, date, time, theme, status, LocalDateTime.now(clock)));
+    private Reservation insertReservation(String name, LocalDate date, ReservationTime time, Theme theme, ReservationStatus reservationStatus) {
+        return reservationRepository.save(Reservation.create(name, date, time, theme, reservationStatus, LocalDateTime.now(clock)));
     }
 }

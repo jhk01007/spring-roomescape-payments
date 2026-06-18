@@ -1,7 +1,7 @@
 package roomescape.reservation.service.dto;
 
 
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.theme.domain.Theme;
@@ -14,7 +14,7 @@ public record ReservationWaitingResult(
         LocalDate date,
         ReservationTime time,
         Theme theme,
-        Status status,
+        ReservationStatus reservationStatus,
         long waitNumber
 ) {
     public static ReservationWaitingResult from(ReservationWaitingDto reservationWaitingDto) {
@@ -24,7 +24,7 @@ public record ReservationWaitingResult(
                 reservationWaitingDto.date(),
                 reservationWaitingDto.time(),
                 reservationWaitingDto.theme(),
-                reservationWaitingDto.status(),
+                reservationWaitingDto.reservationStatus(),
                 reservationWaitingDto.waitNumber()
         );
     }

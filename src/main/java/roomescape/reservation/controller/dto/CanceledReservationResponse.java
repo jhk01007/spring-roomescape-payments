@@ -10,7 +10,7 @@ public record CanceledReservationResponse(
         String date,
         ReservationTimeResponse time,
         ThemeResponse theme,
-        String status
+        String reservationStatus
 ) implements ReservationWaitingResponse {
     public static CanceledReservationResponse from(ReservationWaitingResult reservationWaitingResult) {
         return new CanceledReservationResponse(
@@ -19,7 +19,7 @@ public record CanceledReservationResponse(
                 reservationWaitingResult.date().toString(),
                 ReservationTimeResponse.from(reservationWaitingResult.time()),
                 ThemeResponse.from(reservationWaitingResult.theme()),
-                reservationWaitingResult.status().toString()
+                reservationWaitingResult.reservationStatus().toString()
         );
     }
 }

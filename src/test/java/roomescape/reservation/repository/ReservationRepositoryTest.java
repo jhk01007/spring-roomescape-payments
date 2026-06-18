@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import roomescape.common.dto.PageResult;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.repository.dto.ReservationWaitingDto;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.integration.db.repository.RepositoryTest;
@@ -28,9 +28,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static roomescape.reservation.domain.Status.*;
-import static roomescape.reservation.domain.Status.CONFIRMED;
-import static roomescape.reservation.domain.Status.WAITING;
+import static roomescape.reservation.domain.ReservationStatus.*;
+import static roomescape.reservation.domain.ReservationStatus.CONFIRMED;
+import static roomescape.reservation.domain.ReservationStatus.WAITING;
 
 @RepositoryTest
 class ReservationRepositoryTest {
@@ -198,13 +198,13 @@ class ReservationRepositoryTest {
         Theme theme = sqlFixtureGenerator.insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
 
         ReservationTime beforeTime = sqlFixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
-        Status beforeStatus = WAITING;
+        ReservationStatus beforeReservationStatus = WAITING;
         LocalDate beforeDate = LocalDate.of(2023, 8, 5);
-        Reservation reservation = sqlFixtureGenerator.insertReservation("브라운", beforeDate, beforeTime, theme, beforeStatus);
+        Reservation reservation = sqlFixtureGenerator.insertReservation("브라운", beforeDate, beforeTime, theme, beforeReservationStatus);
 
         LocalDate updatedDate = LocalDate.of(2023, 9, 7);
         ReservationTime updatedTime = sqlFixtureGenerator.insertReservationTime(LocalTime.of(12, 0));
-        Status updatedStatus = CONFIRMED;
+        ReservationStatus updatedReservationStatus = CONFIRMED;
         LocalDateTime lastModifiedAt = LocalDateTime.of(2023, 9, 1, 10, 0);
 
         // when
@@ -212,7 +212,7 @@ class ReservationRepositoryTest {
         found.updateDateTimeAndStatus(
                 updatedDate,
                 entityManager.getReference(ReservationTime.class, updatedTime.getId()),
-                updatedStatus,
+                updatedReservationStatus,
                 lastModifiedAt
         );
         entityManager.flush();
@@ -221,11 +221,11 @@ class ReservationRepositoryTest {
         Map<String, Object> map = findReservationById(reservation.getId());
         LocalDate date = ((Date) map.get("date")).toLocalDate();
         Long timeId = ((Number) map.get("time_id")).longValue();
-        Status status = from((String) map.get("status"));
+        ReservationStatus reservationStatus = from((String) map.get("reservation_status"));
         LocalDateTime updatedLastModifiedAt = ((java.sql.Timestamp) map.get("last_modified_at")).toLocalDateTime();
         assertThat(date).isEqualTo(updatedDate);
         assertThat(timeId).isEqualTo(updatedTime.getId());
-        assertThat(status).isEqualTo(updatedStatus);
+        assertThat(reservationStatus).isEqualTo(updatedReservationStatus);
         assertThat(updatedLastModifiedAt).isEqualTo(lastModifiedAt);
     }
 
@@ -233,22 +233,22 @@ class ReservationRepositoryTest {
     @DisplayName("예약의 상태를 더티 체킹으로 수정한다.")
     public void updateStatus_dirtyChecking() {
         // given
-        Status beforeStatus = WAITING;
-        Status updatedStatus = CONFIRMED;
+        ReservationStatus beforeReservationStatus = WAITING;
+        ReservationStatus updatedReservationStatus = CONFIRMED;
 
         ReservationTime time = sqlFixtureGenerator.insertReservationTime(LocalTime.of(10, 0));
         Theme theme = sqlFixtureGenerator.insertTheme("레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
-        Reservation reservation = sqlFixtureGenerator.insertReservation("브라운", LocalDate.of(2023, 8, 5), time, theme, beforeStatus);
+        Reservation reservation = sqlFixtureGenerator.insertReservation("브라운", LocalDate.of(2023, 8, 5), time, theme, beforeReservationStatus);
 
         // when
         Reservation found = reservationRepository.findById(reservation.getId()).orElseThrow();
-        found.updateStatus(updatedStatus);
+        found.updateStatus(updatedReservationStatus);
         entityManager.flush();
 
         // then
         Map<String, Object> map = findReservationById(reservation.getId());
-        Status status = from((String) map.get("status"));
-        assertThat(status).isEqualTo(updatedStatus);
+        ReservationStatus reservationStatus = from((String) map.get("reservation_status"));
+        assertThat(reservationStatus).isEqualTo(updatedReservationStatus);
     }
 
     @Test
@@ -360,9 +360,9 @@ class ReservationRepositoryTest {
 
         // then
         Map<String, Object> map = findReservationById(reservation.getId());
-        Status status = from((String) map.get("status"));
+        ReservationStatus reservationStatus = from((String) map.get("reservation_status"));
         Long cancelToken = ((Number) map.get("cancel_token")).longValue();
-        assertThat(status).isEqualTo(CANCELED);
+        assertThat(reservationStatus).isEqualTo(CANCELED);
         assertThat(cancelToken).isEqualTo(reservation.getId());
     }
 

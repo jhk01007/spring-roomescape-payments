@@ -11,6 +11,7 @@ import roomescape.payment.application.port.in.dto.PaymentPrepareResult;
 import roomescape.payment.application.port.out.PaymentSessionRepository;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationRepository;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.test_config.clock.MutableClock;
 import roomescape.test_config.fixture.SQLFixtureGenerator;
@@ -24,8 +25,8 @@ import java.time.LocalTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static roomescape.payment.domain.exception.PaymentErrorCode.PAYMENT_EXPIRED;
-import static roomescape.reservation.domain.Status.CANCELED;
-import static roomescape.reservation.domain.Status.PENDING;
+import static roomescape.reservation.domain.ReservationStatus.CANCELED;
+import static roomescape.reservation.domain.ReservationStatus.PENDING;
 
 @ServiceTest
 class PaymentPrepareServiceTest {
@@ -87,11 +88,11 @@ class PaymentPrepareServiceTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(reservationRepository.findById(reservation.getId()).get().getStatus()).isEqualTo(CANCELED);
+        assertThat(reservationRepository.findById(reservation.getId()).get().getReservationStatus()).isEqualTo(CANCELED);
     }
 
     private Reservation insertReservation(
-            roomescape.reservation.domain.Status status,
+            ReservationStatus reservationStatus,
             LocalDateTime lastModifiedAt,
             LocalDateTime paymentExpiresAt
     ) {
@@ -107,7 +108,7 @@ class PaymentPrepareServiceTest {
                 LocalDate.of(2025, 5, 2),
                 time,
                 theme,
-                status,
+                reservationStatus,
                 lastModifiedAt,
                 paymentExpiresAt
         );

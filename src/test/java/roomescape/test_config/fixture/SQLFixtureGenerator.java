@@ -4,7 +4,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.domain.Status;
+import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.theme.domain.Theme;
 
@@ -23,10 +23,10 @@ public class SQLFixtureGenerator {
     }
 
     public Reservation insertReservation(
-            String guestName, LocalDate date, ReservationTime time, Theme theme, Status status) {
+            String guestName, LocalDate date, ReservationTime time, Theme theme, ReservationStatus reservationStatus) {
         LocalDateTime now = LocalDateTime.now();
 
-        return insertReservation(guestName, date, time, theme, status, now);
+        return insertReservation(guestName, date, time, theme, reservationStatus, now);
     }
 
     public Reservation insertReservation(
@@ -34,15 +34,15 @@ public class SQLFixtureGenerator {
             LocalDate date,
             ReservationTime time,
             Theme theme,
-            Status status,
+            ReservationStatus reservationStatus,
             LocalDateTime lastModifiedAt
     ) {
         LocalDateTime paymentExpiresAt = null;
-        if (Status.PENDING.equals(status)) {
+        if (ReservationStatus.PENDING.equals(reservationStatus)) {
             paymentExpiresAt = lastModifiedAt.plusMinutes(10);
         }
 
-        return insertReservation(guestName, date, time, theme, status, lastModifiedAt, paymentExpiresAt);
+        return insertReservation(guestName, date, time, theme, reservationStatus, lastModifiedAt, paymentExpiresAt);
     }
 
     public Reservation insertReservation(
@@ -50,7 +50,7 @@ public class SQLFixtureGenerator {
             LocalDate date,
             ReservationTime time,
             Theme theme,
-            Status status,
+            ReservationStatus reservationStatus,
             LocalDateTime lastModifiedAt,
             LocalDateTime paymentExpiresAt
     ) {
@@ -61,12 +61,12 @@ public class SQLFixtureGenerator {
                 date,
                 attachedTime,
                 attachedTheme,
-                status,
+                reservationStatus,
                 lastModifiedAt,
                 paymentExpiresAt
         );
         entityManager.persist(reservation);
-        if (Status.CANCELED.equals(status)) {
+        if (ReservationStatus.CANCELED.equals(reservationStatus)) {
             flush();
             reservation.cancel();
         }
@@ -75,7 +75,7 @@ public class SQLFixtureGenerator {
     }
 
     public Reservation insertDeletedReservation(String guestName, LocalDate date, ReservationTime time, Theme theme) {
-        Reservation reservation = insertReservation(guestName, date, time, theme, Status.CONFIRMED);
+        Reservation reservation = insertReservation(guestName, date, time, theme, ReservationStatus.CONFIRMED);
         reservation.cancel();
         flush();
         return reservation;
