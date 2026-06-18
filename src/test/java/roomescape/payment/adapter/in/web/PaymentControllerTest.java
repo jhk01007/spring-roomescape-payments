@@ -103,8 +103,8 @@ class PaymentControllerTest {
     }
 
     @Test
-    @DisplayName("사용자별 결제 확인 필요 목록을 조회한다.")
-    void getRequiresCheckPayments_success() throws Exception {
+    @DisplayName("사용자별 결제 정보 전체 목록을 조회한다.")
+    void getMyPayments_success() throws Exception {
         // given
         ReservationTime time = ReservationTime.of(1L, LocalTime.of(10, 0));
         Theme theme = Theme.of(1L, "레벨2 탈출", "우테코 레벨2를 탈출하는 내용입니다.", "https://example.com/theme.png");
@@ -119,8 +119,19 @@ class PaymentControllerTest {
                 "order-id",
                 40_000L
         );
-        given(paymentCheckUseCase.findRequiresCheckByGuestName("브라운"))
-                .willReturn(List.of(result));
+        PaymentCheckResult completedResult = new PaymentCheckResult(
+                2L,
+                "브라운",
+                LocalDate.of(2026, 6, 19),
+                time,
+                theme,
+                DONE,
+                "done-payment-key",
+                "done-order-id",
+                40_000L
+        );
+        given(paymentCheckUseCase.findAllByGuestName("브라운"))
+                .willReturn(List.of(result, completedResult));
 
         // when, then
         mockMvc.perform(get("/payments/me")
@@ -131,11 +142,14 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.payments[0].status").value("REQUIRES_CHECK"))
                 .andExpect(jsonPath("$.payments[0].paymentKey").value("payment-key"))
                 .andExpect(jsonPath("$.payments[0].orderId").value("order-id"))
-                .andExpect(jsonPath("$.payments[0].amount").value(40_000L));
+                .andExpect(jsonPath("$.payments[0].amount").value(40_000L))
+                .andExpect(jsonPath("$.payments[1].status").value("DONE"))
+                .andExpect(jsonPath("$.payments[1].paymentKey").value("done-payment-key"))
+                .andExpect(jsonPath("$.payments[1].orderId").value("done-order-id"));
 
         then(paymentCheckUseCase)
                 .should()
-                .findRequiresCheckByGuestName("브라운");
+                .findAllByGuestName("브라운");
     }
 
     @Test

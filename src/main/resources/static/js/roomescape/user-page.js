@@ -455,10 +455,6 @@ function renderLookupReservations(reservations) {
       const waitNumber = reservation.waitNumber;
       const disabledActions = status === "CANCELED";
       const canPay = status === "PENDING";
-      const requiresPaymentCheck = status === "REQUIRES_CHECK";
-      const paymentCheckHint = requiresPaymentCheck
-        ? `<span class="list-meta">결제 확인 필요 목록에서 승인 결과를 다시 확인해주세요.</span>`
-        : "";
       const row = document.createElement("div");
       row.className = `list-row reservation-row ${status.toLowerCase()}`;
       row.innerHTML = `
@@ -468,11 +464,9 @@ function renderLookupReservations(reservations) {
             ${statusBadgeHtml(status, waitNumber)}
           </span>
           <span class="list-meta">${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(theme?.name || "-")} · ${escapeHtml(normalizeTime(time?.startAt || "-"))}</span>
-          ${paymentCheckHint}
         </div>
         <div class="row-actions">
           ${canPay ? `<button class="primary-button compact-button" type="button" data-pay-reservation-id="${reservation.id}">결제하기</button>` : ""}
-          ${requiresPaymentCheck ? `<button class="secondary-button compact-button" type="button" data-show-payment-check>결제 정보 보기</button>` : ""}
           ${disabledActions ? "" : `<button class="secondary-button compact-button" type="button" data-edit-reservation-id="${reservation.id}">수정</button>`}
           ${disabledActions ? "" : `<button class="danger-button compact-button" type="button" data-cancel-reservation-id="${reservation.id}">취소</button>`}
         </div>
@@ -491,7 +485,7 @@ function renderLookupPayments(payments) {
   elements.paymentCheckCount.textContent = `${payments.length}건`;
 
   if (payments.length === 0) {
-    elements.paymentCheckList.innerHTML = `<div class="empty">확인이 필요한 결제가 없습니다.</div>`;
+    elements.paymentCheckList.innerHTML = `<div class="empty">조회된 결제 정보가 없습니다.</div>`;
     return;
   }
 
@@ -500,8 +494,9 @@ function renderLookupPayments(payments) {
     .forEach((payment) => {
       const theme = getReservationTheme(payment);
       const time = getReservationTime(payment);
+      const canRetryPayment = payment.status === "REQUIRES_CHECK";
       const row = document.createElement("div");
-      row.className = "list-row reservation-row requires_check";
+      row.className = `list-row reservation-row ${String(payment.status || "").toLowerCase()}`;
       row.innerHTML = `
         <div class="list-main">
           <span class="list-title">
@@ -512,7 +507,7 @@ function renderLookupPayments(payments) {
           <span class="list-meta">주문 ${escapeHtml(payment.orderId || "-")} · 결제키 ${escapeHtml(payment.paymentKey || "-")} · ${escapeHtml(formatPrice(payment.amount))}</span>
         </div>
         <div class="row-actions">
-          <button class="primary-button compact-button" type="button" data-retry-payment-id="${payment.reservationId}">결제 승인 재요청</button>
+          ${canRetryPayment ? `<button class="primary-button compact-button" type="button" data-retry-payment-id="${payment.reservationId}">결제 승인 재요청</button>` : ""}
         </div>
       `;
       elements.paymentCheckList.appendChild(row);
@@ -601,14 +596,6 @@ async function retryPaymentConfirmation(reservationId) {
   } catch (error) {
     setLookupMessage(endpointMessageOr(error, "결제 승인 재요청에 실패했습니다."), "error");
   }
-}
-
-function moveToPaymentCheckList() {
-  if (!elements.paymentCheckList) {
-    return;
-  }
-  elements.paymentCheckList.scrollIntoView({ behavior: "smooth", block: "start" });
-  setLookupMessage("결제 확인 필요 목록에서 결제 승인 재요청을 진행해주세요.", "ok");
 }
 
 function renderEditTimeOptions(times, selectedTimeId = null) {
@@ -832,12 +819,6 @@ function bindUserEvents() {
     const payButton = event.target.closest("[data-pay-reservation-id]");
     if (payButton) {
       startPaymentReservation(Number(payButton.dataset.payReservationId));
-      return;
-    }
-
-    const showPaymentCheckButton = event.target.closest("[data-show-payment-check]");
-    if (showPaymentCheckButton) {
-      moveToPaymentCheckList();
       return;
     }
 

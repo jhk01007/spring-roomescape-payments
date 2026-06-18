@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface PaymentCheckUseCase {
 
-    List<PaymentCheckResult> findRequiresCheckByGuestName(String guestName);
+    List<PaymentCheckResult> findAllByGuestName(String guestName);
 }

@@ -45,8 +45,8 @@ public class TossPaymentRepository implements PaymentRepository {
     }
 
     @Override
-    public List<PaymentCheckInfo> findAllRequiresCheckByGuestName(String guestName) {
-        return jpaTossPaymentRepository.findAllByGuestNameAndStatus(guestName, PaymentStatus.REQUIRES_CHECK)
+    public List<PaymentCheckInfo> findAllByGuestName(String guestName) {
+        return jpaTossPaymentRepository.findAllByGuestName(guestName)
                 .stream()
                 .map(this::toPaymentCheckInfo)
                 .toList();

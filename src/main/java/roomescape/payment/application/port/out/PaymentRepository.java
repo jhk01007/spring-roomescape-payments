@@ -13,5 +13,5 @@ public interface PaymentRepository {
 
     boolean existsByPaymentKeyAndStatus(String paymentKey, PaymentStatus status);
 
-    List<PaymentCheckInfo> findAllRequiresCheckByGuestName(String guestName);
+    List<PaymentCheckInfo> findAllByGuestName(String guestName);
 }

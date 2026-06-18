@@ -156,7 +156,7 @@ class PaymentCompleteServiceTest {
                     assertThat(payment.getApprovedAt()).isNull();
                 });
 
-        assertThat(paymentCheckUseCase.findRequiresCheckByGuestName("브라운"))
+        assertThat(paymentCheckUseCase.findAllByGuestName("브라운"))
                 .singleElement()
                 .satisfies(result -> {
                     assertThat(result).extracting(

@@ -169,6 +169,7 @@ class ReservationConcurrencyTest {
             return delegate.findAllPendingPaymentExpiresAtBeforeOrEqual(paymentExpiresAt);
         }
 
+
         @Override
         public List<ReservationWaitingDto> findWaitingAllByGuestName(String guestName) {
             return delegate.findWaitingAllByGuestName(guestName);

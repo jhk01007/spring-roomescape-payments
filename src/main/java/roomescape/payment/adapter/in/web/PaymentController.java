@@ -66,9 +66,9 @@ public class PaymentController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<PaymentCheckListResponse> getRequiresCheckPayments(@CurrentUser String guestName) {
+    public ResponseEntity<PaymentCheckListResponse> getMyPayments(@CurrentUser String guestName) {
         return ResponseEntity.ok(PaymentCheckListResponse.from(
-                paymentCheckUseCase.findRequiresCheckByGuestName(guestName)
+                paymentCheckUseCase.findAllByGuestName(guestName)
         ));
     }
 

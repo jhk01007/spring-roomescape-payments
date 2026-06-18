@@ -17,8 +17,8 @@ public class PaymentCheckService implements PaymentCheckUseCase {
     private final PaymentRepository paymentRepository;
 
     @Override
-    public List<PaymentCheckResult> findRequiresCheckByGuestName(String guestName) {
-        return paymentRepository.findAllRequiresCheckByGuestName(guestName).stream()
+    public List<PaymentCheckResult> findAllByGuestName(String guestName) {
+        return paymentRepository.findAllByGuestName(guestName).stream()
                 .map(PaymentCheckResult::from)
                 .toList();
     }

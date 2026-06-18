@@ -24,11 +24,7 @@ public interface JpaTossPaymentRepository extends JpaRepository<TossPayment, Lon
             JOIN FETCH reservation.time
             JOIN FETCH reservation.theme
             WHERE reservation.guestName = :guestName
-              AND payment.paymentStatus = :paymentStatus
-            ORDER BY reservation.date DESC, payment.id DESC
+            ORDER BY payment.requestedAt DESC, payment.id DESC
             """)
-    List<TossPayment> findAllByGuestNameAndStatus(
-            @Param("guestName") String guestName,
-            @Param("paymentStatus") PaymentStatus paymentStatus
-    );
+    List<TossPayment> findAllByGuestName(@Param("guestName") String guestName);
 }

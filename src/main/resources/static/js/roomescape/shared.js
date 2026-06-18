@@ -542,8 +542,32 @@ function statusLabel(status) {
   if (status === "PENDING") {
     return "결제 대기";
   }
+  if (status === "DONE") {
+    return "결제 완료";
+  }
+  if (status === "READY") {
+    return "결제 준비";
+  }
+  if (status === "IN_PROGRESS") {
+    return "결제 진행";
+  }
+  if (status === "WAITING_FOR_DEPOSIT") {
+    return "입금 대기";
+  }
   if (status === "REQUIRES_CHECK") {
     return "확인 필요";
+  }
+  if (status === "PARTIAL_CANCELED") {
+    return "부분 취소";
+  }
+  if (status === "ABORTED") {
+    return "결제 실패";
+  }
+  if (status === "EXPIRED") {
+    return "만료";
+  }
+  if (status === "UNKNOWN") {
+    return "확인 불가";
   }
   if (status === "CANCELED") {
     return "취소";
