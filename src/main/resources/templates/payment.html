@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}">
+  <title>방탈출 예약 결제</title>
+</head>
+<body data-page="payment" th:attr="data-page=${activePage}">
+  <div class="app-shell">
+    <header th:replace="~{fragments/layout :: topbar(${activePage}, ${brandSubtitle})}"></header>
+
+    <main class="checkout-main">
+      <section id="paymentPanel" class="checkout-panel" aria-labelledby="checkoutTitle">
+        <div class="checkout-head">
+          <div class="lookup-title-group">
+            <p id="checkoutReservationId" class="section-kicker">예약 결제</p>
+            <h1 id="checkoutTitle" class="checkout-title">결제수단 선택</h1>
+            <p id="paymentSummary" class="checkout-summary-text"></p>
+          </div>
+          <span id="paymentAmount" class="checkout-amount"></span>
+        </div>
+
+        <div class="checkout-summary-grid" aria-label="결제 예약 정보">
+          <div class="summary-row">
+            <span class="summary-label">주문명</span>
+            <span id="checkoutOrderName" class="summary-value">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">예약자</span>
+            <span id="checkoutGuestName" class="summary-value">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">일정</span>
+            <span id="checkoutDateTime" class="summary-value">-</span>
+          </div>
+        </div>
+
+        <div id="paymentMethod" class="payment-widget-host checkout-widget"></div>
+        <div id="paymentAgreement" class="payment-widget-host checkout-widget"></div>
+
+        <div class="checkout-actions">
+          <button id="checkoutBackButton" class="secondary-button" type="button">메인으로 돌아가기</button>
+          <button id="paymentButton" class="reserve-button checkout-payment-button" type="button" disabled>선택한 결제수단으로 결제하기</button>
+        </div>
+        <p id="paymentMessage" class="message"></p>
+      </section>
+    </main>
+  </div>
+
+  <div th:replace="~{fragments/layout :: toast}"></div>
+  <div th:replace="~{fragments/layout :: error-popup}"></div>
+  <script th:inline="javascript">
+    window.ROOMESCAPE_PAYMENT = {
+      clientKey: /*[[${tossClientKey}]]*/ ""
+    };
+  </script>
+  <script src="https://js.tosspayments.com/v2/standard" defer></script>
+  <script th:replace="~{fragments/layout :: roomescape-script}"></script>
+</body>
+</html>

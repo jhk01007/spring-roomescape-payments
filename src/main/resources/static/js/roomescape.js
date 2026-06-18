@@ -8,6 +8,7 @@ const API_BASE = "";
     const SLOT_WAITING = "WAITING";
     const SLOT_UNAVAILABLE = "UNAVAILABLE";
     const SLOT_LOADING = "LOADING";
+    const PAYMENT_DRAFT_STORAGE_PREFIX = "roomescape:payment-draft:";
 
     const state = {
       currentView: "user",
@@ -94,6 +95,10 @@ const API_BASE = "";
       return PAGE === "user";
     }
 
+    function isPaymentPage() {
+      return PAGE === "payment";
+    }
+
     const elements = {
       sourceStatus: $("#sourceStatus"),
       popularList: $("#popularList"),
@@ -123,6 +128,11 @@ const API_BASE = "";
       paymentAgreement: $("#paymentAgreement"),
       paymentButton: $("#paymentButton"),
       paymentMessage: $("#paymentMessage"),
+      checkoutReservationId: $("#checkoutReservationId"),
+      checkoutOrderName: $("#checkoutOrderName"),
+      checkoutGuestName: $("#checkoutGuestName"),
+      checkoutDateTime: $("#checkoutDateTime"),
+      checkoutBackButton: $("#checkoutBackButton"),
       editReservationForm: $("#editReservationForm"),
       editReservationTitle: $("#editReservationTitle"),
       editReservationMeta: $("#editReservationMeta"),
@@ -308,9 +318,45 @@ const API_BASE = "";
       return fallback;
     }
 
-    function redirectToPaymentFail(message) {
+    function paymentDraftStorageKey(reservationId) {
+      return `${PAYMENT_DRAFT_STORAGE_PREFIX}${reservationId}`;
+    }
+
+    function savePaymentDraft(draft) {
+      window.sessionStorage.setItem(
+        paymentDraftStorageKey(draft.reservationId),
+        JSON.stringify(draft)
+      );
+    }
+
+    function loadPaymentDraft(reservationId) {
+      if (!reservationId) {
+        return null;
+      }
+      const saved = window.sessionStorage.getItem(paymentDraftStorageKey(reservationId));
+      if (!saved) {
+        return null;
+      }
+      try {
+        const draft = JSON.parse(saved);
+        return Number(draft?.reservationId) === Number(reservationId) ? draft : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function clearStoredPaymentDraft(reservationId) {
+      if (reservationId) {
+        window.sessionStorage.removeItem(paymentDraftStorageKey(reservationId));
+      }
+    }
+
+    function redirectToPaymentFail(message, reservationId = null) {
       const params = new URLSearchParams();
       params.set("payment", "fail");
+      if (reservationId) {
+        params.set("reservationId", reservationId);
+      }
       if (message) {
         params.set("message", message);
       }
@@ -875,6 +921,20 @@ const API_BASE = "";
       };
     }
 
+    function moveToPaymentPage(payload, paymentReservation, theme, time) {
+      const draft = {
+        reservationId: paymentReservation.reservationId,
+        amount: paymentReservation.amount,
+        orderName: paymentReservation.orderName,
+        payload,
+        themeName: theme.name,
+        timeLabel: normalizeTime(time.startAt)
+      };
+
+      savePaymentDraft(draft);
+      window.location.assign(`/payments?reservationId=${encodeURIComponent(draft.reservationId)}`);
+    }
+
     async function openPaymentPanel(payload, paymentReservation, theme, time) {
       if (!elements.paymentPanel) {
         return;
@@ -935,6 +995,73 @@ const API_BASE = "";
       }
     }
 
+    function renderCheckoutSummary(draft) {
+      const date = draft.payload?.date;
+      const guestName = draft.payload?.guestName || "-";
+      const themeName = draft.themeName || draft.orderName || "방탈출 예약";
+      const timeLabel = draft.timeLabel || "-";
+      const summary = `${formatDate(date)} · ${themeName} · ${timeLabel}`;
+
+      elements.checkoutReservationId.textContent = `예약번호 ${draft.reservationId}`;
+      elements.checkoutOrderName.textContent = draft.orderName || themeName;
+      elements.checkoutGuestName.textContent = guestName;
+      elements.checkoutDateTime.textContent = summary;
+      elements.paymentSummary.textContent = summary;
+      elements.paymentAmount.textContent = formatPrice(draft.amount);
+      elements.paymentButton.disabled = true;
+    }
+
+    async function initializePaymentPage() {
+      const params = new URLSearchParams(window.location.search);
+      const reservationId = Number(params.get("reservationId"));
+      const draft = loadPaymentDraft(reservationId);
+      if (!reservationId || !draft) {
+        elements.paymentButton.disabled = true;
+        setPaymentMessage("결제 정보를 찾을 수 없습니다. 메인 화면에서 다시 예약해주세요.");
+        return;
+      }
+
+      state.paymentDraft = draft;
+      renderCheckoutSummary(draft);
+
+      if (state.mode !== "live") {
+        elements.paymentMethod.innerHTML = `<p class="payment-summary">데모 모드에서는 실제 결제위젯을 렌더링하지 않습니다.</p>`;
+        setPaymentMessage("라이브 서버에서 결제수단을 선택할 수 있습니다.", "ok");
+        return;
+      }
+
+      const clientKey = window.ROOMESCAPE_PAYMENT?.clientKey;
+      if (!clientKey) {
+        setPaymentMessage("Toss 클라이언트 키가 설정되지 않아 결제수단을 렌더링할 수 없습니다.");
+        return;
+      }
+      if (typeof window.TossPayments !== "function") {
+        setPaymentMessage("Toss 결제위젯 SDK를 불러오지 못했습니다.");
+        return;
+      }
+
+      state.paymentRendering = true;
+      setPaymentMessage("결제수단을 불러오고 있습니다.");
+      try {
+        const tossPayments = window.TossPayments(clientKey);
+        const widgets = tossPayments.widgets({ customerKey: window.TossPayments.ANONYMOUS });
+        state.paymentWidgets = widgets;
+
+        await widgets.setAmount({ currency: "KRW", value: Number(draft.amount) });
+        await Promise.all([
+          widgets.renderPaymentMethods({ selector: "#paymentMethod", variantKey: "DEFAULT" }),
+          widgets.renderAgreement({ selector: "#paymentAgreement", variantKey: "AGREEMENT" })
+        ]);
+
+        elements.paymentButton.disabled = false;
+        setPaymentMessage("결제수단을 선택한 뒤 결제를 진행해주세요.", "ok");
+      } catch (error) {
+        setPaymentMessage(endpointMessageOr(error, "결제수단을 불러오지 못했습니다."));
+      } finally {
+        state.paymentRendering = false;
+      }
+    }
+
     async function submitPayment() {
       const draft = state.paymentDraft;
       if (!draft || state.paymentRendering) {
@@ -960,8 +1087,8 @@ const API_BASE = "";
           orderId: prepared.orderId,
           orderName: prepared.orderName,
           customerName: draft.payload.guestName,
-          successUrl: window.location.origin + "/?payment=success",
-          failUrl: window.location.origin + "/?payment=fail"
+          successUrl: `${window.location.origin}/?payment=success&reservationId=${encodeURIComponent(draft.reservationId)}`,
+          failUrl: `${window.location.origin}/?payment=fail&reservationId=${encodeURIComponent(draft.reservationId)}`
         });
       } catch (error) {
         let message = error.code === "USER_CANCEL"
@@ -974,7 +1101,7 @@ const API_BASE = "";
             message = endpointMessageOr(failureError, "결제 실패 후 예약 취소 처리에 실패했습니다.");
           }
         }
-        redirectToPaymentFail(message);
+        redirectToPaymentFail(message, draft.reservationId);
       }
     }
 
@@ -1018,9 +1145,7 @@ const API_BASE = "";
           }
           state.reservations = [...state.reservations, createdReservation];
           state.selectedSlotAvailability = { availability: SLOT_WAITING };
-          await openPaymentPanel(payload, paymentReservation, theme, time);
-          renderTimes();
-          syncSummary();
+          moveToPaymentPage(payload, paymentReservation, theme, time);
           return;
         }
 
@@ -1067,7 +1192,7 @@ const API_BASE = "";
     }
 
     function cleanPaymentRedirectParams(params) {
-      ["payment", "paymentType", "paymentKey", "orderId", "amount", "code", "message"].forEach((key) => {
+      ["payment", "paymentType", "paymentKey", "orderId", "amount", "code", "message", "reservationId"].forEach((key) => {
         params.delete(key);
       });
 
@@ -1083,6 +1208,7 @@ const API_BASE = "";
 
       const params = new URLSearchParams(window.location.search);
       const paymentStatus = params.get("payment");
+      const reservationId = Number(params.get("reservationId")) || null;
       if (paymentStatus === "fail") {
         const message = params.get("message") || "결제가 완료되지 않았습니다.";
         const orderId = params.get("orderId");
@@ -1094,6 +1220,7 @@ const API_BASE = "";
         } catch (error) {
           showErrorPopup(endpointMessageOr(error, "결제 실패 후 예약 취소 처리에 실패했습니다."), "예약 취소를 확인해주세요");
         } finally {
+          clearStoredPaymentDraft(reservationId);
           cleanPaymentRedirectParams(params);
         }
         return;
@@ -1113,11 +1240,13 @@ const API_BASE = "";
 
       try {
         await postJson("/payments/confirm", { paymentKey, orderId, amount });
+        clearStoredPaymentDraft(reservationId);
         showToast("예약이 완료되었습니다.", "결제가 승인되어 예약이 확정되었습니다.");
         setFormMessage("예약이 완료되었습니다.", "ok");
       } catch (error) {
         showErrorPopup(endpointMessageOr(error, "결제 승인 처리에 실패했습니다."), "결제를 확인할 수 없습니다");
       } finally {
+        clearStoredPaymentDraft(reservationId);
         cleanPaymentRedirectParams(params);
       }
     }
@@ -1318,9 +1447,7 @@ const API_BASE = "";
       elements.nameInput.value = reservation.guestName || "";
       elements.dateInput.value = reservation.date;
 
-      await openPaymentPanel(payload, paymentReservation, theme, time);
-      setLookupMessage("결제수단을 선택한 뒤 결제를 진행해주세요.", "ok");
-      elements.paymentPanel?.scrollIntoView({ behavior: "smooth", block: "center" });
+      moveToPaymentPage(payload, paymentReservation, theme, time);
     }
 
     function renderLookupReservations(reservations) {
@@ -2004,6 +2131,13 @@ const API_BASE = "";
 
     async function loadInitialData() {
       const isFilePreview = window.location.protocol === "file:";
+      if (isPaymentPage()) {
+        state.mode = isFilePreview ? "demo" : "live";
+        setSourceStatus();
+        await initializePaymentPage();
+        return;
+      }
+
       if (isFilePreview) {
         renderDemoFirst();
         return;
@@ -2073,7 +2207,6 @@ const API_BASE = "";
       });
       elements.nameInput.addEventListener("input", syncSummary);
       elements.reserveButton.addEventListener("click", reserve);
-      elements.paymentButton.addEventListener("click", submitPayment);
       elements.lookupForm.addEventListener("submit", lookupReservations);
       elements.lookupList.addEventListener("click", (event) => {
         const payButton = event.target.closest("[data-pay-reservation-id]");
@@ -2101,6 +2234,11 @@ const API_BASE = "";
       elements.cancelReservationForm.addEventListener("submit", submitCancelReservation);
       elements.cancelReservationCloseButton.addEventListener("click", clearCancelReservation);
       elements.cancelAuthorizationName.addEventListener("input", syncCancelReservationForm);
+    }
+
+    if (isPaymentPage()) {
+      elements.paymentButton.addEventListener("click", submitPayment);
+      elements.checkoutBackButton.addEventListener("click", () => window.location.assign("/"));
     }
 
     if (isAdminPage()) {

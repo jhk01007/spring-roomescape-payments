@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class PageController {
 
-    private static final String ASSET_VERSION = "pending-lookup-payment-1";
+    private static final String ASSET_VERSION = "checkout-payment-1";
 
     private final String tossClientKey;
 
@@ -26,6 +26,12 @@ public class PageController {
     public String admin(Model model) {
         addLayoutAttributes(model, "admin", "방탈출 예약 관리자", "테마, 시간, 예약을 운영 관리");
         return "admin";
+    }
+
+    @GetMapping("/payments")
+    public String payment(Model model) {
+        addLayoutAttributes(model, "payment", "방탈출 예약 결제", "결제수단을 선택하고 예약을 확정");
+        return "payment";
     }
 
     @GetMapping("/index.html")
